@@ -152,7 +152,7 @@ int ReadSDS(Param_t *param);
 bool SDSInfo(Param_t *param);
 int ReadSDSV(Param_t *param);
 bool SDSInfoV(Param_t *param);
-Param_t *CopyParam(Param_t *param);
+//Param_t *CopyParam(Param_t *param);
 void PrintParam(Param_t *param);
 
 #endif

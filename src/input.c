@@ -75,6 +75,9 @@
 #include "HdfEosDef.h"
 #include "geoloc.h"
 
+#include "hdf5.h"
+#include "resamp.h"
+
 /* Constants */
 #define FILL_ATTR_NAME "_FillValue"
 
@@ -143,7 +146,18 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
   char tmperrstr[M_MSG_LEN+1];
   double fill[MYHDF_MAX_NATTR_VAL];
   Myhdf_attr_t attr;
-  char msg[M_MSG_LEN+1];  
+  
+    hid_t       file, datasetHandle;         /* handles */
+    hid_t       datatype, dataspace;
+    hid_t       memspace;
+    herr_t       status_n;
+    H5T_class_t t_class;                 /* data type class */
+    H5T_order_t order;                 /* data order */
+    size_t      size;                  /*
+				        * size of the data element
+				        * stored in file
+				        */ 
+    hsize_t     datasetDimensions[2];
 
   /* Check parameters */
   
@@ -184,8 +198,8 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
 
   /* Open file for SD access */
 
-  this->sds_file_id = SDstart((char *)file_name, DFACC_RDONLY);
-  if (this->sds_file_id == HDF_ERROR) {
+  this->sds_file_id = H5Fopen(file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
+  if (this->sds_file_id < 0) {
     free(this->sds.name);
     free(this->file_name);
     free(this);  
@@ -193,25 +207,46 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
     return (Input_t *)NULL;
   }
   this->open = true;
+  
+  //datasetHandle = H5Dopen(this->sds_file_id, sds_name, H5P_DEFAULT);
+  
+    /*
+     * Get datatype and dataspace handles and then query
+     * dataset class, order, size, rank and dimensions.
+   
+    datatype  = H5Dget_type(datasetHandle);
+    t_class     = H5Tget_class(datatype);
+    if (t_class == H5T_INTEGER) printf("Data set has INTEGER type \n");
+    order     = H5Tget_order(datatype);
+    if (order == H5T_ORDER_LE) printf("Little endian order \n");
+
+    size  = H5Tget_size(datatype);
+    printf(" Data size is %d \n", (int)size);
+
+    dataspace = H5Dget_space(datasetHandle);
+    rank      = H5Sget_simple_extent_ndims(dataspace);
+    status_n  = H5Sget_simple_extent_dims(dataspace, datasetDimensions, NULL);
+    printf("rank %d, dimensions %lu x %lu \n", rank,
+	   (unsigned long)(datasetDimensions[0]), (unsigned long)(datasetDimensions[1]));  
+    */
 
   /* Get SDS information and start SDS access */
 
-  if (!GetSDSInfo(this->sds_file_id, &this->sds)) {
-    SDend(this->sds_file_id);
+  if (!GetSDSInfoV(this->sds_file_id, &this->sds)) {
+    // SDend(this->sds_file_id);
     free(this->sds.name);
     free(this->file_name);
     free(this);
     strcpy (errstr, "OpenInput: getting sds info");
     return (Input_t *)NULL;
   }
+  printf("GetSDInfoV done\n");
 
   /* Get dimensions */
 
   for (ir = 0; ir < this->sds.rank; ir++) {
-    if (!GetSDSDimInfo(this->sds.id, &this->sds.dim[ir], ir)) {
+    if (!GetSDSDimInfoV(this->sds.id, &this->sds.dim[ir], ir)) {
       for (ir1 = 0; ir1 < ir; ir1++) free(this->sds.dim[ir1].name);
-      SDendaccess(this->sds.id);
-      SDend(this->sds_file_id);
       free(this->sds.name);
       free(this->file_name);
       free(this);
@@ -219,6 +254,7 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
       return (Input_t *)NULL;
     }
   }
+  printf("GetSDSDimInfoV done\n");
 
   /* Check the rank and dimensions */
 
@@ -227,11 +263,9 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
     
   if (error_string == (char *)NULL)
   {
-    if (!FindInputDim(rank, dim, this->sds.dim, this->extra_dim, &this->dim,
+    if (!FindInputDimV(rank, dim, this->sds.dim, this->extra_dim, &this->dim,
         tmperrstr)) {
       for (ir1 = 0; ir1 < ir; ir1++) free(this->sds.dim[ir1].name);
-      SDendaccess(this->sds.id);
-      SDend(this->sds_file_id);
       free(this->sds.name);
       free(this->file_name);
       free(this);
@@ -239,6 +273,7 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
         "sample dimensions", tmperrstr);
       return (Input_t *)NULL;
     }
+    printf("FindInputDimV done\n");
   }
 
   /* Check the line and sample dimensions */
@@ -249,95 +284,68 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
     this->size.s = this->sds.dim[this->dim.s].nval;
     
     this->ires = -1;
-    this->ires = (int)((this->size.s / (double)NFRAME_1KM_MODIS) + 0.5);
-    sprintf(msg, "size.l: %d\n", this->size.l);
-    LogInfomsg(msg);    
-    sprintf(msg, "size.s: %d\n", this->size.s);
-    LogInfomsg(msg);    
-    sprintf(msg, "ires: %d\n", this->ires);
-    LogInfomsg(msg);    
+    this->ires = (int)((this->size.s / (double)NFRAME_MBAND_VIIRS) + 0.5);
+    //this->ires = (int)((this->size.s / (double)NFRAME_1KM_MODIS) + 0.5);
+    printf("res: %d",this->ires);
 
     if (this->ires != 1  && 
         this->ires != 2  &&  
         this->ires != 4) {
       for (ir1 = 0; ir1 < ir; ir1++) free(this->sds.dim[ir1].name);
-      SDendaccess(this->sds.id);
-      SDend(this->sds_file_id);
       free(this->sds.name);
       free(this->file_name);
       free(this);
       strcpy (errstr, "OpenInput: invalid resolution");
       return (Input_t *)NULL;
     }
+    printf("size.l: %d, size.s: %d\n", this->size.l, this->size.s);
   }
 
   /* Get fill value or use 0.0 as the fill */
 
   if (error_string == (char *)NULL) {
     attr.name = FILL_ATTR_NAME;
+/* TDR
     if (!GetAttrDouble(this->sds.id, &attr, fill)) {
       this->fill_value = (int) 0.0;
     }
     else {
       this->fill_value = (int) fill[0];
     }
+*/
+    this->fill_value = (int) 65535;  // TDR, force all missing flags in scan to this for now.
   }
   
-  /* Set up the band offset */
-
-  if (iband >= 0)
-    this->iband = iband;
-  else {
-    switch (this->ires) {
-      case -1:  this->iband = BAND_GEN_NONE;  break;
-      case  1:  this->iband = BAND_GEN_1KM;   break;
-      case  2:  this->iband = BAND_GEN_500M;  break;
-      case  4:  this->iband = BAND_GEN_250M;  break;
-    }
-  }
-
-  /* Check other dimensions */
-
-  for (ir = 0; ir < rank; ir++) {
-    if (this->extra_dim[ir] >= this->sds.dim[ir].nval) {
-      for (ir1 = 0; ir1 < ir; ir1++) free(this->sds.dim[ir1].name);
-      SDendaccess(this->sds.id);
-      SDend(this->sds_file_id);
-      free(this->sds.name);
-      free(this->file_name);
-      free(this);
-      strcpy (errstr, "OpenInput: invalid dimension");
-      return (Input_t *)NULL;
-    }
-  }
 
   /* Calculate number of scans, and for swath space, check for 
      an integral number of scans */
 
-  this->scan_size.l = NDET_1KM_MODIS;
+  this->scan_size.l = NDET_MBAND_VIIRS;
+  //this->scan_size.l = NDET_1KM_MODIS;
   this->scan_size.l *= this->ires;
   this->scan_size.s = this->size.s;
   this->nscan = (this->size.l - 1) / this->scan_size.l + 1;
   if ((this->nscan * this->scan_size.l) != this->size.l) {
     for (ir1 = 0; ir1 < ir; ir1++) free(this->sds.dim[ir1].name);
-    SDendaccess(this->sds.id);
-    SDend(this->sds_file_id);
     free(this->sds.name);
     free(this->file_name);
     free(this);
     strcpy (errstr, "OpenInput: not an integral number of scans");
     return (Input_t *)NULL;
   }
-  
-    sprintf(msg, "scan_size.l: %d\n", this->scan_size.l);
-    LogInfomsg(msg);    
-    sprintf(msg, "scan_size.s: %d\n", this->scan_size.s);
-    LogInfomsg(msg);    
-    sprintf(msg, "nscan: %d\n", this->nscan);
-    LogInfomsg(msg);      
+  printf("number of scans: %d\n", this->nscan);
 
   /* Allocate input buffer */
-
+  
+  /*TDR, need to figure out HDF5 types*/
+  this->sds.type = DFNT_UINT16;
+  this->data_type_size = sizeof(uint16);
+  this->buf.val_uint16 = (uint16 *)calloc(this->size.s, 
+                                       this->data_type_size);
+  if (this->buf.val_uint16 == (uint16 *)NULL) 
+      error_string = "allocating input i/o buffer";
+    
+ /* 
   switch (this->sds.type) {
     case DFNT_CHAR8:
       this->data_type_size = sizeof(char8);
@@ -391,18 +399,20 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
     default:
       error_string = "unsupported data type";
   }
+  */
 
+/*
   if (error_string != (char *)NULL) {
+      printf("Error:   %s\n", error_string);
     for (ir = 0; ir < this->sds.rank; ir++)
       free(this->sds.dim[ir].name);
-    SDendaccess(this->sds.id);
-    SDend(this->sds_file_id);
     free(this->sds.name);
     free(this->file_name);
     free(this);
     sprintf (errstr, "OpenInput: %s", error_string);
     return (Input_t *)NULL;
   }
+*/
 
   return this;
 }
@@ -410,7 +420,7 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
 
 #define MIN_LS_DIM_SIZE (250)
 
-bool FindInputDim(int rank, int *param_dim, Myhdf_dim_t *sds_dim, 
+bool FindInputDimV(int rank, int *param_dim, Myhdf_dim_t *sds_dim, 
                   int *extra_dim, Img_coord_int_t *dim, char *errstr)
 /* 
 !C******************************************************************************
@@ -485,6 +495,14 @@ bool FindInputDim(int rank, int *param_dim, Myhdf_dim_t *sds_dim,
      dimensions, then it is an error.  If not enough dimensions are
      available for "line/sample" dimensions, then it is also an error. */
 
+  // TDR for VIIRS:
+  param_dim[0] = -1;
+  param_dim[1] = -2;
+
+  dim->l = 0;
+  dim->s = 1;  
+
+  /**
   ils = 0;
   iextra = 2;
 
@@ -514,16 +532,13 @@ bool FindInputDim(int rank, int *param_dim, Myhdf_dim_t *sds_dim,
       iextra++;
     }
   }
+   */
 
   /* Update the user parameters */
 
-  for (ir = 0; ir < rank; ir++) {
+  for (ir = 0; ir < rank; ir++)
     param_dim[ir] = temp_dim[ir];
-    printf("param_dim %d : %d\n", ir, param_dim[ir]);
-    printf("extra_dim %d : %d\n", ir, extra_dim[ir]);
-  }
-  printf("l: %d\n", dim->l);
-  printf("s:  %d\n", dim->s);
+  
   return true;
 }
 
@@ -559,15 +574,17 @@ bool CloseInput(Input_t *this)
 !END****************************************************************************
 */
 {
+ Myhdf_sds_t *sds;
 
  if (!this->open)
     LOG_RETURN_ERROR("file not open", "CloseInput", false);
+ 
+    sds = &this->sds;
+    H5Tclose(sds->typeh5);
+    H5Dclose(sds->id);
+    H5Fclose(this->sds_file_id); 
 
-  if (SDendaccess(this->sds.id) == HDF_ERROR) 
-    LOG_RETURN_ERROR("ending sds access", "CloseInput", false);
-
-  SDend(this->sds_file_id);
-  this->open = false;
+    this->open = false;
 
   return true;
 }

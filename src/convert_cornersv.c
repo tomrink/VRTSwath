@@ -125,7 +125,7 @@ int ConvertCornersV(Param_t *param)
     }
 
     /* Open geoloc file */
-    geoloc = OpenGeolocSwathV(param->geoloc_file_name);
+    geoloc = OpenGeolocSwath(param->geoloc_file_name);
     if (geoloc == (Geoloc_t *)NULL)
       LOG_RETURN_ERROR("bad geolocation file", "ConvertCorners", false);
 

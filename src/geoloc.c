@@ -70,17 +70,32 @@
 #include "hdf.h"
 #include "mfhdf.h"
 
+#include "hdf5.h"
+#include "resamp.h"
+
 /* Constants */
 
-#define GEOLOC_LAT_SDS "Latitude"
-#define GEOLOC_LON_SDS "Longitude"
+/*
+#define GEOLOC_LAT_SDS "All_Data/VIIRS-MOD-GEO-TC_All/Latitude"
+*/
+/*
+#define GEOLOC_LON_SDS "All_Data/VIIRS-MOD-GEO-TC_All/Longitude"
+*/
+#define GEOLOC_LAT_SDS "geolocation_data/latitude"
+#define GEOLOC_LON_SDS "geolocation_data/longitude"
+/*
+#define GEOLOC_LAT_SDS "MODIS_Swath_Type_GEO/Geolocation Fields/Latitude"
+#define GEOLOC_LON_SDS "MODIS_Swath_Type_GEO/Geolocation Fields/Longitude"
 #define FILL_ATTR_NAME "_FillValue"
+*/
 
+/*
 Img_coord_double_t band_offset_gen[NBAND_OFFSET_GEN] = {
   {0.0, 0.0, false}, {0.0, 0.0, false}, {0.0, 0.0, false}, {0.0, 0.0, false}, 
   {0.0, 0.0, false}, {0.0, 0.0, false}, {0.0, 0.0, false}, {0.0, 0.0, false},
   {0.0, 0.0, false}, {0.0, 0.0, false}, {0.0, 0.0, false} 
 };
+*/
 
 
 Geoloc_t *OpenGeolocSwath(char *file_name)
@@ -167,17 +182,10 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
 
   /* Set up the band offsets */
 
-  for (ib = 0; ib < NBAND_MODIS; ib++)
-    this->band_offset[ib].l = this->band_offset[ib].s = 0.0;
-  for (ib = 0; ib < NBAND_OFFSET_GEN; ib++) {
-    ib1 = ib + NBAND_MODIS;
-    this->band_offset[ib1].l = band_offset_gen[ib].l;
-    this->band_offset[ib1].s = band_offset_gen[ib].s;
-  }
-
+  
   /* Open file for SD access */
 
-  this->sds_file_id = SDstart((char *)file_name, DFACC_RDONLY);
+  this->sds_file_id = H5Fopen(file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
   if (this->sds_file_id == HDF_ERROR) {
     free(this->sds_lat.name);
     free(this->sds_lon.name);
@@ -195,8 +203,8 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
 
     /* Get SDS information and start SDS access */
 
-    if (!GetSDSInfo(this->sds_file_id, sds)) {
-      SDend(this->sds_file_id);
+    if (!GetSDSInfoV(this->sds_file_id, sds)) {
+      H5Fclose(this->sds_file_id);
       free(this->sds_lat.name);
       free(this->sds_lon.name);
       free(this->file_name);
@@ -206,22 +214,23 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
     }
 
     /* Check rank and type */
+    printf("H5T_FlOAT: %d\n",H5T_FLOAT);
 
     if (sds->rank != 2) error_string = "invalid rank";
-    else if (sds->type != DFNT_FLOAT32) error_string = "invalid type";
+    //else if (sds->typeh5 != H5T_FLOAT) error_string = "invalid type";
 
     /* Get dimensions */
 
     if (error_string == (char *)NULL) {
       for (ir = 0; ir < sds->rank; ir++) {
-        if (!GetSDSDimInfo(sds->id, &sds->dim[ir], ir)) {
+        if (!GetSDSDimInfoV(sds->id, &sds->dim[ir], ir)) {
           for (ir1 = 0; ir1 < ir; ir1++) free(sds->dim[ir1].name);
           error_string = "getting dimension";
         }
       }
     }
 
-    /* Get fill value */
+    /* Get fill value, TDR need HDF5 stuff here
 
     if (error_string == (char *)NULL) {
       attr.name = FILL_ATTR_NAME;
@@ -232,15 +241,14 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
         else this->lon_fill = (float32)fill[0];
       }
     }
+    */
     
     if (error_string != (char *)NULL) {
-      SDendaccess(sds->id);
       if (i > 0) {
         sds = &this->sds_lat;
         for (ir = 0; ir < sds->rank; ir++) free(sds->dim[ir].name);
-        SDendaccess(sds->id);
       }
-      SDend(this->sds_file_id);
+      H5Fclose(this->sds_file_id);      
       free(this->sds_lat.name);
       free(this->sds_lon.name);
       free(this->file_name);
@@ -252,13 +260,17 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
 
   /* Check dimensions */
 
-  this->scan_size.l = NDET_1KM_MODIS;
+  this->scan_size.l = NDET_MBAND_VIIRS;
+  //this->scan_size.l = NDET_1KM_MODIS;
   this->scan_size.s = this->sds_lat.dim[1].nval;
+  printf("scan_size.s: %d\n",this->scan_size.s);
   this->scan_size_geo.l = this->scan_size.l;
   this->scan_size_geo.s = this->scan_size.s;
   this->size.l = this->sds_lat.dim[0].nval;
+  printf("size.l: %d\n", this->size.l);
   this->size.s = this->sds_lat.dim[1].nval;
   this->nscan = this->size.l / this->scan_size.l;
+  printf("number of scans: %d\n",this->nscan);
 
   if ((this->nscan * this->scan_size.l) != this->size.l) 
     error_string = "not an integral number of scans";
@@ -296,14 +308,14 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
       img_p += this->scan_size.s;
     }
 
-    this->lat_buf = (float32 *)calloc(this->scan_size.s, sizeof(float32));
-    if (this->lat_buf == (float32 *)NULL) 
+    this->lat_buf = (float *)calloc(this->scan_size.s, sizeof(float));
+    if (this->lat_buf == (float *)NULL) 
       error_string = "allocating latitude buffer";
   }
 
   if (error_string == (char *)NULL) {
-    this->lon_buf = (float32 *)calloc(this->scan_size.s, sizeof(float32));
-    if (this->lon_buf == (float32 *)NULL) 
+    this->lon_buf = (float *)calloc(this->scan_size.s, sizeof(float));
+    if (this->lon_buf == (float *)NULL) 
       error_string = "allocating longitude buffer";
   }
 
@@ -317,9 +329,8 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
     for (i = 0; i < 2; i++) {
       sds = (i == 1) ? &this->sds_lat : &this->sds_lon;
       for (ir = 0; ir < sds->rank; ir++) free(sds->dim[ir].name);
-      SDendaccess(sds->id);
     }
-    SDend(this->sds_file_id);
+    H5Fclose(this->sds_file_id);
     free(this->sds_lat.name);
     free(this->sds_lon.name);
     free(this->file_name);
@@ -331,7 +342,7 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
 }
 
 
-Geoloc_t *SetupGeolocGrid(Space_def_t *space_def, Input_t *input, 
+Geoloc_t *SetupGeolocGridV(Space_def_t *space_def, Input_t *input, 
                           Kernel_t *kernel)
 /* 
 !C******************************************************************************
@@ -555,15 +566,15 @@ bool CloseGeoloc(Geoloc_t *this)
   int i;
 
   if (!this->open)
-    LOG_RETURN_ERROR("file not open", "CloseGeoloc", false);
+    LOG_RETURN_ERROR("file not open", "CloseGeolocV", false);
 
   for (i = 0; i < 2; i++) {
     sds = (i == 1) ? &this->sds_lat :  &this->sds_lon;
-    if (SDendaccess(sds->id) == HDF_ERROR) 
-      LOG_RETURN_ERROR("ending sds access", "CloseGeoloc", false);
+    H5Tclose(sds->typeh5);
+    H5Dclose(sds->id);
   }
 
-  SDend(this->sds_file_id);
+  H5Fclose(this->sds_file_id);
   this->open = false;
 
   return true;
@@ -649,7 +660,7 @@ bool FreeGeoloc(Geoloc_t *this)
 }
 
 
-bool GetGeolocSwath(Geoloc_t *this, Space_t *space, int iscan)
+bool GetGeolocSwathV(Geoloc_t *this, Space_t *space, int iscan)
 /* 
 !C******************************************************************************
 
@@ -707,12 +718,13 @@ bool GetGeolocSwath(Geoloc_t *this, Space_t *space, int iscan)
     nval[0] = 1;
     nval[1] = this->scan_size.s;
 
-    if (SDreaddata(this->sds_lat.id, start, NULL, nval, 
-                   this->lat_buf) == HDF_ERROR)
-      LOG_RETURN_ERROR("reading latitude", "GetGeolocSwath", false);
-    if (SDreaddata(this->sds_lon.id, start, NULL, nval, 
-                   this->lon_buf) == HDF_ERROR)
-      LOG_RETURN_ERROR("reading longitude", "GetGeolocSwath", false);
+    
+    if (!readData(this->sds_lat.id, start, nval, this->lat_buf)) {
+        return false;
+    }
+    if (!readData(this->sds_lon.id, start, nval, this->lon_buf)) {
+        return false;
+    }
 
     img_p = this->img[il_r];
     for (is = 0; is < this->scan_size.s; is++) {

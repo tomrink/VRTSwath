@@ -942,7 +942,7 @@ bool DetermineResolution(Myhdf_sds_t *sds, Img_coord_int_t *ls_dim, int *ires)
 }
 
 
-bool DeterminePixelSize(char *geoloc_file_name, int num_input_sds, 
+bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds, 
   int ires[MAX_SDS_DIMS], int out_proj_num,
   double output_pixel_size[MAX_SDS_DIMS])
 /*
@@ -998,139 +998,6 @@ bool DeterminePixelSize(char *geoloc_file_name, int num_input_sds,
       nval[0] = 1;
       nval[1] = geoloc->scan_size.s;
 
-      /* Read the longitude values for the entire center scan */
-      if (SDreaddata(geoloc->sds_lon.id, start, NULL, nval,
-        geoloc->lon_buf) == HDF_ERROR)
-        LOG_RETURN_ERROR("reading longitude", "DeterminePixelSize", false);
-
-      /* Get the center of the scan and the center of the scan plus one */
-      center_loc = geoloc->scan_size.s / 2;
-      center = geoloc->lon_buf[center_loc];
-      centerp1 = geoloc->lon_buf[center_loc + 1];
-
-      /* Close geolocation file */
-      if (!CloseGeoloc(geoloc))
-        LOG_RETURN_ERROR("closing geolocation file", "DeterminePixelSize",
-                              false);
-  }
-
-  /* Loop through all the SDSs to be processed */
-  for (i = 0; i < num_input_sds; i++)
-  {
-    /* Determine the output pixel size */
-    /* If the output projection is not Geographic, then the output pixel
-       size is in meters */
-    if (out_proj_num != PROJ_GEO)
-    {
-      switch (ires[i]) {
-        case -1:
-          /* this SDS won't be processed so set to 1000.0 */
-          output_pixel_size[i] = 1000.0;
-          break;
-
-        case 1:
-          output_pixel_size[i] = 1000.0;
-          break;
-
-        case 2:
-          output_pixel_size[i] = 500.0;
-          break;
-
-        case 4:
-          output_pixel_size[i] = 250.0;
-          break;
-
-        default:
-          /* this SDS won't be processed so set to 1000.0 */
-          output_pixel_size[i] = 1000.0;
-          break;
-/*          LOG_RETURN_ERROR("invalid resolution", "DeterminePixelSize",
-                                  false); */
-      }
-    }
-
-    /* If the output projection is Geographic, then we need to read the
-       Geolocation file */
-    else
-    {
-      /* Determine the output pixel size. The geolocation file is at the
-         1km resolution, so take into account the actual resolution of this
-         SDS (ires value). If the ires is -1, then the SDS won't be
-         processed so compute it as if the ires were 1 (1000 m). */
-      if (ires[i] == -1)
-        output_pixel_size[i] = fabs(centerp1 - center);
-      else
-        output_pixel_size[i] = fabs(centerp1 - center) / ires[i];
-    }
-  }
-
-  if (out_proj_num == PROJ_GEO)
-  {
-    /* Free geolocation structure */
-    if (!FreeGeoloc(geoloc))
-      LOG_RETURN_ERROR("freeing geoloc file struct", "DeterminePixelSize",
-      false);
-  }
-
-  return true;
-}
-
-bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds, 
-  int ires[MAX_SDS_DIMS], int out_proj_num,
-  double output_pixel_size[MAX_SDS_DIMS])
-/*
-!C*****************************************************************************
-!Description: 'DeterminePixelSize' uses the ires values (calculated by
- DetermineResolution) to determine the output pixel size.
-
-!Input Parameters:
- Param_t        Input parameter structure. The output_pixel_size values
-                are updated for each SDS specified.
-
-!Output Parameters:
- (returns)      Status:
-                  'true' = okay
-                  'false' = error reading the bounding coords
-
-!Team Unique Header:
-
-! Design Notes:
-  1. If the output projection is Geographic, then the pixel size will need
-     to be computed in degrees.  The algorithm used in this routine uses the
-     nominal pixel size to determine the pixel size in meters.  For Geographic,
-     the difference between two lat/long locations will be used to determine
-     the pixel size in degrees.  That value will be modified depending on
-     whether the resolution is 250m, 500m, or 1km (no modification necessary).
-
-!END*****************************************************************************/
-{
-  int i;
-  Geoloc_t *geoloc = NULL;             /* geolocation file */
-  int center_loc;                      /* center location in the scan */
-  int midscan;                         /* middle scan location */
-  int32 start[MYHDF_MAX_RANK];         /* start reading at this location */
-  int32 nval[MYHDF_MAX_RANK];          /* read this many values */
-  double center = 0.0;                 /* longitude value at the center */
-  double centerp1 = 0.0;               /* longitude value at the center+1 */
-
-  /* If dealing with an output projection of Geographic, then read the
-     center pixel values from the Geolocation file for use later in the
-     pixel size calculation. */
-  if (out_proj_num == PROJ_GEO)
-  {
-      /* Open geoloc file */
-      geoloc = OpenGeolocSwathV(geoloc_file_name);
-      if (geoloc == (Geoloc_t *)NULL)
-        LOG_RETURN_ERROR("bad geolocation file", "DeterminePixelSize",
-                              false);
-
-      /* Grab the line representing the center of the swath (nscan/2) */
-      midscan = geoloc->nscan / 2;
-      start[0] = midscan * geoloc->scan_size.l;
-      start[1] = 0;
-      nval[0] = 1;
-      nval[1] = geoloc->scan_size.s;
-
       if (readData(geoloc->sds_lon.id, start, nval, geoloc->lon_buf)) {
          LOG_RETURN_ERROR("reading longitude", "DeterminePixelSize", false);          
       }
@@ -1143,7 +1010,7 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
       printf("center longitude: %f\n", center);
 
       /* Close geolocation file */
-      if (!CloseGeolocV(geoloc))
+      if (!CloseGeoloc(geoloc))
         LOG_RETURN_ERROR("closing geolocation file", "DeterminePixelSize",
                               false);
   }
@@ -1201,7 +1068,7 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
   if (out_proj_num == PROJ_GEO)
   {
     /* Free geolocation structure */
-    if (!FreeGeolocV(geoloc))
+    if (!FreeGeoloc(geoloc))
       LOG_RETURN_ERROR("freeing geoloc file struct", "DeterminePixelSize",
       false);
   }

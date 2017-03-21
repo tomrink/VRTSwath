@@ -57,6 +57,8 @@
 #include "const.h"
 #include <float.h>
 
+#define DEBUG
+
 /* Functions */
 
 int ConvertCorners(Param_t *param)

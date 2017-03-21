@@ -116,6 +116,8 @@
 #include "myerror.h"
 #include "deg2dms.h"
 
+#include "hdf5.h"
+
 /* External arrays */
 
 extern Proj_sphere_t Proj_sphere[PROJ_NSPHERE];
@@ -343,7 +345,7 @@ Param_t *GetParam(int argc, const char **argv)
 #ifdef DEBUG
     printf ("Reading default SDSs\n");
 #endif
-    this->num_input_sds = ReadSDS(this);
+    this->num_input_sds = ReadSDSV(this);
     if (this->num_input_sds == 0) {
       sprintf(msg, "resamp: error reading default SDS names\n");
       LogInfomsg(msg);
@@ -355,7 +357,7 @@ Param_t *GetParam(int argc, const char **argv)
   }
   else {
     /* Read the SDSs and determine the number of bands in each */
-    if (!SDSInfo(this)) {
+    if (!SDSInfoV(this)) {
       sprintf(msg, "resamp: error reading SDS information\n");
       LogInfomsg(msg);
       FreeParam(this);
@@ -411,13 +413,15 @@ Param_t *GetParam(int argc, const char **argv)
       printf ("Getting param %s ...\n", this->input_sds_name);
 #endif
 
-      /* Update the system to process the current SDS and band */
+      // TDR, skip this. VIIRS datasets only have rank=2
+      /* Update the system to process the current SDS and band
       if (!update_sds_info(i, this)) {
         sprintf(msg, "resamp: error updating SDS information");
 	LogInfomsg(msg);
         FreeParam(this);
         return (Param_t *)NULL;
       }
+      */
 
       /* Make a copy of the dim parameters, since they get modified */
       for (ip = 0; ip < MYHDF_MAX_RANK; ip++) {
@@ -440,6 +444,7 @@ Param_t *GetParam(int argc, const char **argv)
 #endif
         break;
       }
+      printf("GetParamV.OpenInputV done\n");
 
       /* Determine the resolution of each of the input SDSs */
       if (!DetermineResolution(&input->sds, &input->dim, &this->ires[i])) {
@@ -478,7 +483,7 @@ Param_t *GetParam(int argc, const char **argv)
     /* No pixel size was specified, so try to determine the resolution of
        the input SDSs and use that for the pixel size. It is assumed that
        the input swath product will have the same resolution for all SDSs. */
-    if (!DeterminePixelSize(this->geoloc_file_name, this->num_input_sds,
+    if (!DeterminePixelSizeV(this->geoloc_file_name, this->num_input_sds,
       this->ires, this->output_space_def.proj_num,
       this->output_pixel_size)) {
       sprintf(msg, "resamp: error determining output pixel size. "
@@ -537,6 +542,22 @@ Param_t *GetParam(int argc, const char **argv)
       /* Store all initial corner points in the x/y corner structure.
          The call to convert_corners will handle moving to the lat/long
          structure location. */
+/*
+        ul_corner.lon = 145.0;
+        ul_corner.lat = 19.3;
+        lr_corner.lon = 151.4;
+        lr_corner.lat = 13.68;
+*/
+        ul_corner.lon = -100.0;
+        ul_corner.lat = 55.0;
+        lr_corner.lon = -48.0;
+        lr_corner.lat = 37.0;        
+/*
+        ul_corner.lon = -84.6;
+        ul_corner.lat =  24.7;
+        lr_corner.lon = -57.0;
+        lr_corner.lat =   5.0;
+*/
       this->output_space_def.ul_corner_set = true;
       this->output_space_def.lr_corner_set = true;
       this->output_space_def.ul_corner.x = ul_corner.lon;
@@ -592,7 +613,7 @@ Param_t *GetParam(int argc, const char **argv)
   /* Use the UL and LR corner points to get the UL corner in output
      space and the number of lines/samples in the output image. This must
      be done for each SDS, since the pixel size might be different. */
-  if (!ConvertCorners (this)) {
+  if (!ConvertCorners(this)) {
     sprintf(msg, "resamp: error determining UL and lines/samples from "
             "the input UL and LR corners\n");
     LogInfomsg(msg);
@@ -758,7 +779,7 @@ bool FreeParam(Param_t *this)
 }                            
 
 
-int ReadSDS(Param_t *this)
+int ReadSDSV(Param_t *this)
 /*
 !C******************************************************************************
 !Description: 'ReadSDS' reads the input file for available swath SDSs.
@@ -794,6 +815,18 @@ int ReadSDS(Param_t *this)
   char sds_name[MAX_NC_NAME];  /* SDS name */
   int32 rank;                  /* rank of the SDS */
   int32 dims[MYHDF_MAX_RANK];  /* dimensions of the SDS */
+  
+    hid_t       file, datasetHandle;         /* handles */
+    hid_t       datatype, dataspace;
+    hid_t       memspace;
+    herr_t       status_n;
+    H5T_class_t t_class;                 /* data type class */
+    H5T_order_t order;                 /* data order */
+    size_t      size;                  /*
+				        * size of the data element
+				        * stored in file
+				        */ 
+    hsize_t     datasetDimensions[2];
 
   /* Open file for SD read access */
 
@@ -875,7 +908,7 @@ int ReadSDS(Param_t *this)
   return (int)nsds;
 }
 
-bool SDSInfo(Param_t *this)
+bool SDSInfoV(Param_t *this)
 /*
 !C******************************************************************************
 !Description: 'SDSInfo' accesses the specified SDSs in the input file and
@@ -907,102 +940,29 @@ bool SDSInfo(Param_t *this)
 !END*****************************************************************************/
 {
   int i, j;
-  int32 sd_fid, sds_id;        /* file id and sds id */
-  int32 sds_index;             /* index of the current SDS */
-  int32 nattr;                 /* number of attributes for the SDS */
-  int32 data_type;             /* data type of the SDS */
-  char sds_name[MAX_NC_NAME];  /* SDS name */
-  int32 rank;                  /* rank of the SDS */
-  int32 dims[MYHDF_MAX_RANK];  /* dimensions of the SDS */
-  char errmsg[M_MSG_LEN+1];    /* error message */
-  char tmpsds[MAX_STR_LEN];    /* temp copy of the SDS name in case we need
-                                  to remove the '_'s from the SDS name */
-  int curr_char;               /* current character in the SDS name */
-
-  /* Open file for SD read access */
-  sd_fid = SDstart(this->input_file_name, DFACC_RDONLY);
-  if (sd_fid == HDF_ERROR)
-    LOG_RETURN_ERROR("opening input file", "SDSInfo", false);
-
+  
   /* loop through the SDSs */
   for (i = 0; i < this->num_input_sds; i++)
   {
-    /* try to find the index for the current SDS name */
-    sds_index = SDnametoindex(sd_fid, this->input_sds_name_list[i]);
-    if (sds_index == HDF_ERROR) {
-      /* if running the GUI, SDS names with blank spaces have '_'s placed
-         for the blank spaces. replace the '_'s with blank spaces and then
-         try to find the SDS. */
-      strcpy(tmpsds, this->input_sds_name_list[i]);
-      for (curr_char = 0; curr_char < (int) strlen (tmpsds) - 1; curr_char++)
-      {
-        /* if this character is an underscore then replace with a blank */
-        if (tmpsds[curr_char] == '_')
-          tmpsds[curr_char] = ' ';
-      }
-
-      /* try to find the index for the new SDS name */
-      sds_index = SDnametoindex(sd_fid, tmpsds);
-      if (sds_index == HDF_ERROR) {
-        sprintf(errmsg, "couldn't get sds index for %s or %s",
-          this->input_sds_name_list[i], tmpsds);
-        LOG_RETURN_ERROR(errmsg, "SDSInfo", false);
-      }
-
-      /* copy the correct SDS name into the SDS name list */
-      strcpy(this->input_sds_name_list[i], tmpsds);
-    }
-
-    /* get the current SDS */
-    sds_id = SDselect(sd_fid, sds_index);
-    if (sds_id == HDF_ERROR)
-      LOG_RETURN_ERROR("getting sds id", "SDSInfo", false);
-
-    /* get the current SDS information */
-    if (SDgetinfo(sds_id, sds_name, &rank, dims, &data_type, &nattr) ==
-        HDF_ERROR) {
-      SDendaccess(sds_id);
-      LOG_RETURN_ERROR("getting sds information", "SDSInfo", false);
-    }
-
-    if (rank > MYHDF_MAX_RANK) {
-      SDendaccess(sds_id);
-      LOG_RETURN_ERROR("sds rank too large", "SDSInfo", false);
-    }
 
     /* if the user specified bands to be processed for the current
        SDS, then fill in the number of bands in the SDS */
     if (this->input_sds_nbands[i] != 0)
     {
-       /* if the rank is 2 then there is only one band to process, otherwise
-          the first dimension value contains the number of bands in the SDS */
-       if (rank == 2)
          this->input_sds_nbands[i] = 1;
-       else
-         this->input_sds_nbands[i] = (int)dims[0];
     }
 
     /* otherwise process all the bands in the SDS by default */
     else
     {
-       /* if the rank is 2 then there is only one band to process, otherwise
-          the first dimension value contains the number of bands in the SDS */
-       if (rank == 2)
-         this->input_sds_nbands[i] = 1;
-       else
-         this->input_sds_nbands[i] = (int)dims[0];
+        this->input_sds_nbands[i] = 1;
 
        /* Process all the bands in this SDS */
        for (j = 0; j < this->input_sds_nbands[i]; j++)
          this->input_sds_bands[i][j] = 1;
     }
 
-    /* close the SDS */
-    SDendaccess(sds_id);
   }
-
-  /* close the HDF-EOS file */
-  SDend(sd_fid);
 
   return true;
 }

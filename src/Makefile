@@ -20,9 +20,9 @@ INC	= resamp.h param.h geoloc.h input.h scan.h output.h space.h kernel.h \
 #-----------------------------------------------------------
 # Define the source code and object files for the resampler:
 #-----------------------------------------------------------
-SRC	= param.c paramv.c geoloc.c input.c inputv.c geolocv.c scan.c output.c space.c kernel.c \
+SRC	= param.c geoloc.c input.c scan.c output.c space.c kernel.c \
 	  patches.c myhdf.c mystring.c parser.c myerror.c \
-	  InitGeoTiff.c deg2dms.c degdms.c convert_corners.c convert_cornersv.c metadata.c \
+	  InitGeoTiff.c deg2dms.c degdms.c convert_corners.c metadata.c \
 	  geo_trans.c write_hdr.c write_rb.c addmeta.c logh.c geowrpr.c \
 	  filegeo.c myendian.c
 

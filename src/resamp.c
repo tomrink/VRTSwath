@@ -252,7 +252,7 @@ int main (int argc, const char **argv)
   if (NeedHelp(argc, argv))
     exit(EXIT_SUCCESS);
 
-  param_save = GetParamV(argc, argv);
+  param_save = GetParam(argc, argv);
   
   if (param_save == (Param_t *)NULL)
     LOG_ERROR("getting runtime parameters", "main");
@@ -303,7 +303,7 @@ int main (int argc, const char **argv)
         LOG_ERROR("error updating SDS information", "main");
 
       /* Open input file for the specified SDS and band */
-      input = OpenInputV(param->input_file_name, param->input_sds_name, 
+      input = OpenInput(param->input_file_name, param->input_sds_name, 
         param->iband, param->rank[curr_sds], param->dim[curr_sds], errstr);
       if (input == (Input_t *)NULL) {
         /* This is an invalid SDS for our processing so skip to the next
@@ -324,7 +324,7 @@ int main (int argc, const char **argv)
       printf("GetKernal done\n");
 
       /* Open geoloc file */
-      geoloc = OpenGeolocSwathV(param->geoloc_file_name);
+      geoloc = OpenGeolocSwath(param->geoloc_file_name);
       if (geoloc == (Geoloc_t *)NULL)
         LOG_ERROR("bad geolocation file", "main");
       printf("OpenGeolocSwathV done\n");
@@ -523,11 +523,11 @@ int main (int argc, const char **argv)
         LOG_ERROR("freeing kernel structure", "main");
 
       /* Close geolocation file */
-      if (!CloseGeolocV(geoloc))
+      if (!CloseGeoloc(geoloc))
          LOG_ERROR("closing geolocation file", "main");
 
       /* Close input file */
-      if (!CloseInputV(input)) LOG_ERROR("closing input file", "main");
+      if (!CloseInput(input)) LOG_ERROR("closing input file", "main");
 
       /* Free the output space structure */
       if (!FreeSpace(output_space)) 
