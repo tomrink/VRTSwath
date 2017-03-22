@@ -444,7 +444,6 @@ Param_t *GetParam(int argc, const char **argv)
 #endif
         break;
       }
-      printf("GetParamV.OpenInputV done\n");
 
       /* Determine the resolution of each of the input SDSs */
       if (!DetermineResolution(&input->sds, &input->dim, &this->ires[i])) {
