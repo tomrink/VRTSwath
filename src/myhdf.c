@@ -236,6 +236,7 @@ bool GetSDSDimInfoV(int32 sds_id, Myhdf_dim_t *dim, int irank) {
 	   (unsigned long)(datasetDimensions[0]), (unsigned long)(datasetDimensions[1]));
 
     dim->nval = datasetDimensions[irank];
+    dim->name = DupString("dim name unspecified");
 
     return true;    
 }
