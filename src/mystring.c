@@ -87,3 +87,17 @@ char *DupString(char *string)
 
   return (s);
 }
+
+char *getFilenameFromPath(char* path, char delimeter) {
+    int i;
+    path = DupString(path);
+    int len = strlen(path);
+    for(i = len-1; i; i--)  
+    {
+            if (path[i] == delimeter)
+            {
+                return &path[i+1];
+            }
+     }
+     return path;
+}
