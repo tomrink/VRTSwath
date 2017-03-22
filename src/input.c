@@ -147,18 +147,6 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
   double fill[MYHDF_MAX_NATTR_VAL];
   Myhdf_attr_t attr;
   
-    hid_t       file, datasetHandle;         /* handles */
-    hid_t       datatype, dataspace;
-    hid_t       memspace;
-    herr_t       status_n;
-    H5T_class_t t_class;                 /* data type class */
-    H5T_order_t order;                 /* data order */
-    size_t      size;                  /*
-				        * size of the data element
-				        * stored in file
-				        */ 
-    hsize_t     datasetDimensions[2];
-
   /* Check parameters */
   
   if (rank < 2  ||  rank > MYHDF_MAX_RANK) {
@@ -208,28 +196,6 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
   }
   this->open = true;
   
-  //datasetHandle = H5Dopen(this->sds_file_id, sds_name, H5P_DEFAULT);
-  
-    /*
-     * Get datatype and dataspace handles and then query
-     * dataset class, order, size, rank and dimensions.
-   
-    datatype  = H5Dget_type(datasetHandle);
-    t_class     = H5Tget_class(datatype);
-    if (t_class == H5T_INTEGER) printf("Data set has INTEGER type \n");
-    order     = H5Tget_order(datatype);
-    if (order == H5T_ORDER_LE) printf("Little endian order \n");
-
-    size  = H5Tget_size(datatype);
-    printf(" Data size is %d \n", (int)size);
-
-    dataspace = H5Dget_space(datasetHandle);
-    rank      = H5Sget_simple_extent_ndims(dataspace);
-    status_n  = H5Sget_simple_extent_dims(dataspace, datasetDimensions, NULL);
-    printf("rank %d, dimensions %lu x %lu \n", rank,
-	   (unsigned long)(datasetDimensions[0]), (unsigned long)(datasetDimensions[1]));  
-    */
-
   /* Get SDS information and start SDS access */
 
   if (!GetSDSInfoV(this->sds_file_id, &this->sds)) {
