@@ -944,7 +944,7 @@ bool DetermineResolution(Myhdf_sds_t *sds, Img_coord_int_t *ls_dim, int *ires)
 
 
 bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds, 
-  int ires[MAX_SDS_DIMS], int out_proj_num,
+  char *productName, int out_proj_num,
   double output_pixel_size[MAX_SDS_DIMS])
 /*
 !C*****************************************************************************
@@ -1015,6 +1015,12 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
         LOG_RETURN_ERROR("closing geolocation file", "DeterminePixelSize",
                               false);
   }
+  
+  double pixelSize = getVIIRSpixelResolutionFromProductName(productName);
+  if (pixelSize == 0) {
+        LOG_RETURN_ERROR(strcat("can't determine pixel size for product: ", productName), 
+                "DeterminePixelSize", false);
+  }
 
   /* Loop through all the SDSs to be processed */
   for (i = 0; i < num_input_sds; i++)
@@ -1024,45 +1030,13 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
        size is in meters */
     if (out_proj_num != PROJ_GEO)
     {
-      switch (ires[i]) {
-        case -1:
-          /* this SDS won't be processed so set to 1000.0 */
-          output_pixel_size[i] = 780.0;
-          break;
-
-        case 1:
-          output_pixel_size[i] = 780.0;
-          break;
-
-        case 2:
-          output_pixel_size[i] = 390.0;
-          break;
-
-        case 4:
-          output_pixel_size[i] = 195.0;
-          break;
-
-        default:
-          /* this SDS won't be processed so set to 1000.0 */
-          output_pixel_size[i] = 780.0;
-          break;
-/*          LOG_RETURN_ERROR("invalid resolution", "DeterminePixelSize",
-                                  false); */
-      }
+        output_pixel_size[i] = (double) pixelSize;
     }
-
     /* If the output projection is Geographic, then we need to read the
        Geolocation file */
     else
     {
-      /* Determine the output pixel size. The geolocation file is at the
-         1km resolution, so take into account the actual resolution of this
-         SDS (ires value). If the ires is -1, then the SDS won't be
-         processed so compute it as if the ires were 1 (1000 m). */
-      if (ires[i] == -1)
-        output_pixel_size[i] = fabs(centerp1 - center);
-      else
-        output_pixel_size[i] = fabs(centerp1 - center) / ires[i];
+       output_pixel_size[i] = fabs(centerp1 - center);
     }
   }
 
