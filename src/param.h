@@ -155,4 +155,7 @@ bool SDSInfoV(Param_t *param);
 //Param_t *CopyParam(Param_t *param);
 void PrintParam(Param_t *param);
 
+char *getVIIRSproductNameFromFilename(char *filename);
+float getVIIRSpixelResolutionFromProductName(char *productName);
+
 #endif
