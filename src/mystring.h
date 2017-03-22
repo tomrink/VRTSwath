@@ -41,5 +41,7 @@
 
 char *DupString(char *string);
 
+char *getFilenameFromPath(char *path, char *delimeter);
+
 #endif
 
