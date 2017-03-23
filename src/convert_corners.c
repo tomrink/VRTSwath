@@ -89,40 +89,10 @@ int ConvertCorners(Param_t *param)
      subset type and determine the minimum bounding rectangle. */
   if (param->output_spatial_subset_type == LINE_SAMPLE)
   {
-    /* Determine the highest resolution SDS that will be processed */
-    highest_ires = -1;
-    for (i = 0; i < param->num_input_sds; i++)
-    {
-      if (param->ires[i] > highest_ires)
-        highest_ires = param->ires[i];
-    }
-
-    /* Determine the line/sample in the 1KM geolocation file for the
-       specified line/sample in the highest resolution SDS */
     ul_samp = (int)output_space_def->ul_corner.x;
     ul_line = (int)output_space_def->ul_corner.y;
     lr_samp = (int)output_space_def->lr_corner.x;
     lr_line = (int)output_space_def->lr_corner.y;
-
-    /* If the highest resolution is a 500m SDS, then divide the UL and
-       LR line/sample values by 2.  If the highest resolution is a 250m
-       SDS, then divide the UL/LR line/sample by 4.  This is their location
-       in the 1KM geolocation file.  No modifications are needed if the
-       highest resolution SDS is 1km. */
-    if (highest_ires == 2)
-    { /* 500m SDS */
-      ul_samp /= 2;
-      ul_line /= 2;
-      lr_samp /= 2;
-      lr_line /= 2;
-    }
-    else if (highest_ires == 4)
-    { /* 250m SDS */
-      ul_samp /= 4;
-      ul_line /= 4;
-      lr_samp /= 4;
-      lr_line /= 4;
-    }
 
     /* Open geoloc file */
     geoloc = OpenGeolocSwath(param->geoloc_file_name);
@@ -134,12 +104,12 @@ int ConvertCorners(Param_t *param)
     start[1] = ul_samp - 1;
     nval[0] = 1;
     nval[1] = 1;
-    if (SDreaddata(geoloc->sds_lon.id, start, NULL, nval,
-      geoloc->lon_buf) == HDF_ERROR) {
-      CloseGeoloc(geoloc);
-      FreeGeoloc(geoloc);
-      LOG_RETURN_ERROR("reading UL longitude", "ConvertCorners", false);
-    }
+    printf("lon id: %d\n",geoloc->sds_lon.id);
+    printf("%d %d\n", ul_samp, ul_line);
+    printf("%d %d\n", lr_samp, lr_line);
+    if (!readData(geoloc->sds_lon.id, start, nval, geoloc->lon_buf)) {
+        LOG_RETURN_ERROR("reading longitude", "ConvertCorners", false);          
+    }    
     output_space_def->ul_corner.x = geoloc->lon_buf[0];
 
     /* Grab the UL latitude (0-based start values) */
@@ -147,11 +117,8 @@ int ConvertCorners(Param_t *param)
     start[1] = ul_samp - 1;
     nval[0] = 1;
     nval[1] = 1;
-    if (SDreaddata(geoloc->sds_lat.id, start, NULL, nval,
-      geoloc->lat_buf) == HDF_ERROR) {
-      CloseGeoloc(geoloc);
-      FreeGeoloc(geoloc);
-      LOG_RETURN_ERROR("reading UL latitude", "ConvertCorners", false);
+    if (!readData(geoloc->sds_lat.id, start, nval, geoloc->lat_buf)) {
+       LOG_RETURN_ERROR("reading latitude", "ConvertCorners", false);          
     }
     output_space_def->ul_corner.y = geoloc->lat_buf[0];
 
@@ -160,12 +127,9 @@ int ConvertCorners(Param_t *param)
     start[1] = lr_samp - 1;
     nval[0] = 1;
     nval[1] = 1;
-    if (SDreaddata(geoloc->sds_lon.id, start, NULL, nval,
-      geoloc->lon_buf) == HDF_ERROR) {
-      CloseGeoloc(geoloc);
-      FreeGeoloc(geoloc);
-      LOG_RETURN_ERROR("reading LR longitude", "ConvertCorners", false);
-    }
+    if (!readData(geoloc->sds_lon.id, start, nval, geoloc->lon_buf)) {
+       LOG_RETURN_ERROR("reading longitude", "DeterminePixelSize", false);          
+    }   
     output_space_def->lr_corner.x = geoloc->lon_buf[0];
 
     /* Grab the LR latitude (0-based start values) */
@@ -173,12 +137,9 @@ int ConvertCorners(Param_t *param)
     start[1] = lr_samp - 1;
     nval[0] = 1;
     nval[1] = 1;
-    if (SDreaddata(geoloc->sds_lat.id, start, NULL, nval,
-      geoloc->lat_buf) == HDF_ERROR) {
-      CloseGeoloc(geoloc);
-      FreeGeoloc(geoloc);
-      LOG_RETURN_ERROR("reading LR latitude", "ConvertCorners", false);
-    }
+    if (!readData(geoloc->sds_lat.id, start, nval, geoloc->lat_buf)) {
+       LOG_RETURN_ERROR("reading latitude", "ConvertCorners", false);          
+    }    
     output_space_def->lr_corner.y = geoloc->lat_buf[0];
 
     /* Close geolocation file */

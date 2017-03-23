@@ -542,22 +542,6 @@ Param_t *GetParam(int argc, const char **argv)
       /* Store all initial corner points in the x/y corner structure.
          The call to convert_corners will handle moving to the lat/long
          structure location. */
-/*
-        ul_corner.lon = 145.0;
-        ul_corner.lat = 19.3;
-        lr_corner.lon = 151.4;
-        lr_corner.lat = 13.68;
-*/
-        ul_corner.lon = -100.0;
-        ul_corner.lat = 55.0;
-        lr_corner.lon = -48.0;
-        lr_corner.lat = 37.0;        
-/*
-        ul_corner.lon = -84.6;
-        ul_corner.lat =  24.7;
-        lr_corner.lon = -57.0;
-        lr_corner.lat =   5.0;
-*/
       this->output_space_def.ul_corner_set = true;
       this->output_space_def.lr_corner_set = true;
       this->output_space_def.ul_corner.x = ul_corner.lon;
