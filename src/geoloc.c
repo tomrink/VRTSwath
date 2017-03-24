@@ -214,13 +214,14 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
     }
 
     /* Check rank and type */
-    printf("H5T_FlOAT: %d\n",H5T_FLOAT);
-
-    if (sds->rank != 2) error_string = "invalid rank";
-    //else if (sds->typeh5 != H5T_FLOAT) error_string = "invalid type";
+    if (sds->rank != 2) {
+        error_string = "invalid rank";
+    }
+    else if (H5Tget_class(sds->typeh5) != H5T_FLOAT) {
+        error_string = "invalid type";
+    }
 
     /* Get dimensions */
-
     if (error_string == (char *)NULL) {
       for (ir = 0; ir < sds->rank; ir++) {
         if (!GetSDSDimInfoV(sds->id, &sds->dim[ir], ir)) {
@@ -230,7 +231,7 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
       }
     }
 
-    /* Get fill value, TDR need HDF5 stuff here
+    /* Get fill value, TDR, eventually need HDF5 stuff here
 
     if (error_string == (char *)NULL) {
       attr.name = FILL_ATTR_NAME;
@@ -259,18 +260,16 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
   }
 
   /* Check dimensions */
+  
+  char *productName = getVIIRSproductNameFromFilename(getFilenameFromPath(this->file_name, '/'));
 
-  this->scan_size.l = NDET_MBAND_VIIRS;
-  //this->scan_size.l = NDET_1KM_MODIS;
+  this->scan_size.l = getNDETinScanFromProductName(productName);
   this->scan_size.s = this->sds_lat.dim[1].nval;
-  printf("scan_size.s: %d\n",this->scan_size.s);
   this->scan_size_geo.l = this->scan_size.l;
   this->scan_size_geo.s = this->scan_size.s;
   this->size.l = this->sds_lat.dim[0].nval;
-  printf("size.l: %d\n", this->size.l);
   this->size.s = this->sds_lat.dim[1].nval;
   this->nscan = this->size.l / this->scan_size.l;
-  printf("number of scans: %d\n",this->nscan);
 
   if ((this->nscan * this->scan_size.l) != this->size.l) 
     error_string = "not an integral number of scans";
