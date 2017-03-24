@@ -82,7 +82,7 @@ typedef struct {
 
 /* Prototypes */
 
-Input_t *OpenInput(char *file_name, char *sds_name, 
+Input_t *OpenInput(char *file_name, char *productName, char *sds_name, 
                    int iband, int rank, int *dim, char *errstr);
 bool CloseInput(Input_t *this);
 bool FreeInput(Input_t *this);
