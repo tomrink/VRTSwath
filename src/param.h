@@ -96,6 +96,7 @@ typedef struct {
   bool multires;           /* Did the user specify multiple resolutions for
                               the output product? */
   char *input_file_name;   /* Name of the input image HDF file */
+  char *productName;
   char *output_file_name;  /* Name of the output image HDF file */
   char *geoloc_file_name;  /* Name of the input geolocation HDF file */
   Output_file_format_t output_file_format; /* Output file format (see above) */
@@ -157,5 +158,6 @@ void PrintParam(Param_t *param);
 
 char *getVIIRSproductNameFromFilename(char *filename);
 float getVIIRSpixelResolutionFromProductName(char *productName);
+int getNDETinScanFromProductName(char *productName);
 
 #endif
