@@ -303,7 +303,7 @@ int main (int argc, const char **argv)
         LOG_ERROR("error updating SDS information", "main");
 
       /* Open input file for the specified SDS and band */
-      input = OpenInput(param->input_file_name, param->input_sds_name, 
+      input = OpenInput(param->input_file_name, param->productName, param->input_sds_name, 
         param->iband, param->rank[curr_sds], param->dim[curr_sds], errstr);
       if (input == (Input_t *)NULL) {
         /* This is an invalid SDS for our processing so skip to the next
