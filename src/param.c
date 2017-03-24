@@ -283,6 +283,7 @@ Param_t *GetParam(int argc, const char **argv)
       FreeParam(this);
       return (Param_t *)NULL;
   }
+  this->productName = productName;
 
   /* Check the output filename */
   if ((this->output_file_name == (char *)NULL)  ||  
@@ -430,7 +431,7 @@ Param_t *GetParam(int argc, const char **argv)
       }
 
       /* Open input file for the specified SDS and band */
-      input = OpenInput(this->input_file_name, this->input_sds_name,
+      input = OpenInput(this->input_file_name, this->productName, this->input_sds_name,
                         this->iband, this->rank[i], copy_dim, errstr);
       if (input == (Input_t *)NULL) {
         /* This is an invalid SDS for our processing so skip to the next
@@ -673,6 +674,7 @@ Param_t *CopyParam(Param_t *param)
   /* copy the parameters */
 
   this->input_file_name = strdup(param->input_file_name);
+  this->productName = strdup(param->productName);
   this->output_file_name = strdup(param->output_file_name);
   this->geoloc_file_name = strdup(param->geoloc_file_name);
   this->output_file_format = param->output_file_format;
@@ -871,6 +873,8 @@ void PrintParam
 
     sprintf(msg, "input_filename:          %s\n", param->input_file_name);
     LogInfomsg(msg);
+    sprintf(msg, "product name:            %s\n", param->productName);
+    LogInfomsg(msg);    
     sprintf(msg, "geoloc_filename:         %s\n", param->geoloc_file_name);
     LogInfomsg(msg);
     sprintf(msg, "output_filename:         %s\n", param->output_file_name);
@@ -979,9 +983,10 @@ void PrintParam
 }
 
 
-int numProducts = 2;
-char *productNames[] = {"VL1BM", "VL1BI"};
-float productPixelResolution[] = {780.0, 390.0};
+int numProducts = 4;
+char *productNames[] = {"VL1BM", "VL1BI", "VGEOM", "VGEOI"};
+float productPixelResolution[] = {780.0, 390.0, 780.0, 390.0};
+int NDETinScan[] = {16, 32, 16, 32};
 
 char *getVIIRSproductNameFromFilename(char *filename) {
     int k;
@@ -1005,11 +1010,29 @@ float getVIIRSpixelResolutionFromProductName(char *name) {
         }
     }
     
-    if (idx >= 0 && idx <numProducts-1) {
+    if (idx >= 0 && idx < numProducts) {
         return productPixelResolution[idx];
     }
     else {
         return 0.0;
     }
+}
+
+int getNDETinScanFromProductName(char *name) {
+    int k;
+    int idx = -1;
     
+    for (k=0; k<numProducts; k++) {
+        if (strcmp(productNames[k], name) == 0) {
+            idx = k;
+            break;
+        }
+    }
+    
+    if (idx >= 0 && idx < numProducts) {
+        return NDETinScan[idx];
+    }
+    else {
+        return 0.0;
+    }
 }
