@@ -1071,8 +1071,6 @@ bool readData(hid_t dataset, int *start, int *count, void *buf) {
     hsize_t     stride2D[2];
     
     
-    //char *errmessage = NULL;
-    
     char msg[M_MSG_LEN+1];
     
     if (dataset < 0) {
