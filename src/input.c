@@ -81,7 +81,7 @@
 /* Constants */
 #define FILL_ATTR_NAME "_FillValue"
 
-Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
+Input_t *OpenInput(char *file_name, char *productName, char *sds_name, int iband, int rank,
                    int *dim, char *errstr)
 /* 
 !C******************************************************************************
@@ -199,7 +199,6 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
   /* Get SDS information and start SDS access */
 
   if (!GetSDSInfoV(this->sds_file_id, &this->sds)) {
-    // SDend(this->sds_file_id);
     free(this->sds.name);
     free(this->file_name);
     free(this);
@@ -245,25 +244,9 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
   /* Check the line and sample dimensions */
 
   if (error_string == (char *)NULL) {
-
     this->size.l = this->sds.dim[this->dim.l].nval;
     this->size.s = this->sds.dim[this->dim.s].nval;
-    
-    this->ires = -1;
-    this->ires = (int)((this->size.s / (double)NFRAME_MBAND_VIIRS) + 0.5);
-    //this->ires = (int)((this->size.s / (double)NFRAME_1KM_MODIS) + 0.5);
-    printf("res: %d",this->ires);
-
-    if (this->ires != 1  && 
-        this->ires != 2  &&  
-        this->ires != 4) {
-      for (ir1 = 0; ir1 < ir; ir1++) free(this->sds.dim[ir1].name);
-      free(this->sds.name);
-      free(this->file_name);
-      free(this);
-      strcpy (errstr, "OpenInput: invalid resolution");
-      return (Input_t *)NULL;
-    }
+    this->ires = 1; // always 
     printf("size.l: %d, size.s: %d\n", this->size.l, this->size.s);
   }
 
@@ -286,8 +269,8 @@ Input_t *OpenInput(char *file_name, char *sds_name, int iband, int rank,
   /* Calculate number of scans, and for swath space, check for 
      an integral number of scans */
 
-  this->scan_size.l = NDET_MBAND_VIIRS;
-  //this->scan_size.l = NDET_1KM_MODIS;
+  printf("productName: %s\n", productName);
+  this->scan_size.l = getNDETinScanFromProductName(productName);
   this->scan_size.l *= this->ires;
   this->scan_size.s = this->size.s;
   this->nscan = (this->size.l - 1) / this->scan_size.l + 1;
