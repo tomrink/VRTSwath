@@ -75,19 +75,8 @@
 
 /* Constants */
 
-/*
-#define GEOLOC_LAT_SDS "All_Data/VIIRS-MOD-GEO-TC_All/Latitude"
-*/
-/*
-#define GEOLOC_LON_SDS "All_Data/VIIRS-MOD-GEO-TC_All/Longitude"
-*/
 #define GEOLOC_LAT_SDS "geolocation_data/latitude"
 #define GEOLOC_LON_SDS "geolocation_data/longitude"
-/*
-#define GEOLOC_LAT_SDS "MODIS_Swath_Type_GEO/Geolocation Fields/Latitude"
-#define GEOLOC_LON_SDS "MODIS_Swath_Type_GEO/Geolocation Fields/Longitude"
-#define FILL_ATTR_NAME "_FillValue"
-*/
 
 /*
 Img_coord_double_t band_offset_gen[NBAND_OFFSET_GEN] = {
@@ -261,9 +250,9 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
 
   /* Check dimensions */
   
-  char *productName = getVIIRSproductNameFromFilename(getFilenameFromPath(this->file_name, '/'));
+  char *geoProductName = getVIIRSgeoProductNameFromFilename(getFilenameFromPath(this->file_name, '/'));
 
-  this->scan_size.l = getNDETinScanFromProductName(productName);
+  this->scan_size.l = getNDETinScanFromGeoProductName(geoProductName);
   this->scan_size.s = this->sds_lat.dim[1].nval;
   this->scan_size_geo.l = this->scan_size.l;
   this->scan_size_geo.s = this->scan_size.s;

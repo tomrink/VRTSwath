@@ -123,6 +123,13 @@
 extern Proj_sphere_t Proj_sphere[PROJ_NSPHERE];
 extern Proj_type_t Proj_type[PROJ_NPROJ];
 
+char *productNotDetermined = "ProductNotDetermined";
+int numProducts = 2;
+char *productNames[] = {"VL1BM", "VL1BI"};
+char *geoProductNames[] = {"VGEOM", "VGEOI"};
+float pixelResolution[] = {780.0, 390.0};
+int NDETinScan[] = {16, 32};
+
 /* Functions */
 
 Param_t *GetParam(int argc, const char **argv)
@@ -280,10 +287,17 @@ Param_t *GetParam(int argc, const char **argv)
   if (productName == NULL) {
       sprintf(msg, "can't determine productName from input filename: %s \n", this->input_file_name);
       LogInfomsg(msg);
+  }
+  this->productName = productName;
+  
+  char *geoProductName = getVIIRSgeoProductNameFromFilename(getFilenameFromPath(this->geoloc_file_name, '/'));
+  if (geoProductName == NULL) {
+      sprintf(msg, "can't determine GEO product from input filename: %s \n", this->geoloc_file_name);
+      LogInfomsg(msg);
       FreeParam(this);
       return (Param_t *)NULL;
   }
-  this->productName = productName;
+  this->geoProductName = geoProductName;
 
   /* Check the output filename */
   if ((this->output_file_name == (char *)NULL)  ||  
@@ -431,7 +445,7 @@ Param_t *GetParam(int argc, const char **argv)
       }
 
       /* Open input file for the specified SDS and band */
-      input = OpenInput(this->input_file_name, this->productName, this->input_sds_name,
+      input = OpenInput(this->input_file_name, this->geoProductName, this->input_sds_name,
                         this->iband, this->rank[i], copy_dim, errstr);
       if (input == (Input_t *)NULL) {
         /* This is an invalid SDS for our processing so skip to the next
@@ -485,7 +499,7 @@ Param_t *GetParam(int argc, const char **argv)
        the input SDSs and use that for the pixel size. It is assumed that
        the input swath product will have the same resolution for all SDSs. */
     if (!DeterminePixelSizeV(this->geoloc_file_name, this->num_input_sds,
-      productName, this->output_space_def.proj_num,
+      geoProductName, this->output_space_def.proj_num,
       this->output_pixel_size)) {
       sprintf(msg, "resamp: error determining output pixel size. "
         "Therefore, in order to process this data, the output pixel size "
@@ -675,6 +689,7 @@ Param_t *CopyParam(Param_t *param)
 
   this->input_file_name = strdup(param->input_file_name);
   this->productName = strdup(param->productName);
+  this->geoProductName = strdup(param->geoProductName);
   this->output_file_name = strdup(param->output_file_name);
   this->geoloc_file_name = strdup(param->geoloc_file_name);
   this->output_file_format = param->output_file_format;
@@ -875,6 +890,8 @@ void PrintParam
     LogInfomsg(msg);
     sprintf(msg, "product name:            %s\n", param->productName);
     LogInfomsg(msg);    
+    sprintf(msg, "GEO product name:        %s\n", param->geoProductName);
+    LogInfomsg(msg);        
     sprintf(msg, "geoloc_filename:         %s\n", param->geoloc_file_name);
     LogInfomsg(msg);
     sprintf(msg, "output_filename:         %s\n", param->output_file_name);
@@ -982,12 +999,6 @@ void PrintParam
     LogInfomsg("\n");
 }
 
-
-int numProducts = 4;
-char *productNames[] = {"VL1BM", "VL1BI", "VGEOM", "VGEOI"};
-float productPixelResolution[] = {780.0, 390.0, 780.0, 390.0};
-int NDETinScan[] = {16, 32, 16, 32};
-
 char *getVIIRSproductNameFromFilename(char *filename) {
     int k;
     for (k=0; k<numProducts; k++) {
@@ -996,40 +1007,51 @@ char *getVIIRSproductNameFromFilename(char *filename) {
             return name;
         }
     }
-    return NULL;
+    return productNotDetermined;
 }
 
-float getVIIRSpixelResolutionFromProductName(char *name) {
+char *getVIIRSgeoProductNameFromFilename(char *filename) {
+    int k;
+    for (k=0; k<2; k++) {
+        char *name = geoProductNames[k];
+        if (strstr(filename, name) != NULL) {
+            return name;
+        }
+    }
+    return productNotDetermined;
+}
+
+float getVIIRSpixelResolutionFromGeoProductName(char *name) {
     int k;
     int idx = -1;
     
-    for (k=0; k<numProducts; k++) {
-        if (strcmp(productNames[k], name) == 0) {
+    for (k=0; k<2; k++) {
+        if (strcmp(geoProductNames[k], name) == 0) {
             idx = k;
             break;
         }
     }
     
-    if (idx >= 0 && idx < numProducts) {
-        return productPixelResolution[idx];
+    if (idx >= 0 && idx < 2) {
+        return pixelResolution[idx];
     }
     else {
         return 0.0;
     }
 }
 
-int getNDETinScanFromProductName(char *name) {
+int getNDETinScanFromGeoProductName(char *name) {
     int k;
     int idx = -1;
     
-    for (k=0; k<numProducts; k++) {
-        if (strcmp(productNames[k], name) == 0) {
+    for (k=0; k<2; k++) {
+        if (strcmp(geoProductNames[k], name) == 0) {
             idx = k;
             break;
         }
     }
     
-    if (idx >= 0 && idx < numProducts) {
+    if (idx >= 0 && idx < 2) {
         return NDETinScan[idx];
     }
     else {

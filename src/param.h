@@ -97,6 +97,7 @@ typedef struct {
                               the output product? */
   char *input_file_name;   /* Name of the input image HDF file */
   char *productName;
+  char *geoProductName;
   char *output_file_name;  /* Name of the output image HDF file */
   char *geoloc_file_name;  /* Name of the input geolocation HDF file */
   Output_file_format_t output_file_format; /* Output file format (see above) */
@@ -153,11 +154,12 @@ int ReadSDS(Param_t *param);
 bool SDSInfo(Param_t *param);
 int ReadSDSV(Param_t *param);
 bool SDSInfoV(Param_t *param);
-//Param_t *CopyParam(Param_t *param);
+Param_t *CopyParam(Param_t *param);
 void PrintParam(Param_t *param);
 
 char *getVIIRSproductNameFromFilename(char *filename);
-float getVIIRSpixelResolutionFromProductName(char *productName);
-int getNDETinScanFromProductName(char *productName);
+char *getVIIRSgeoProductNameFromFilename(char *filename);
+float getVIIRSpixelResolutionFromGeoProductName(char *productName);
+int getNDETinScanFromGeoProductName(char *productName);
 
 #endif

@@ -81,7 +81,7 @@
 /* Constants */
 #define FILL_ATTR_NAME "_FillValue"
 
-Input_t *OpenInput(char *file_name, char *productName, char *sds_name, int iband, int rank,
+Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int iband, int rank,
                    int *dim, char *errstr)
 /* 
 !C******************************************************************************
@@ -269,8 +269,7 @@ Input_t *OpenInput(char *file_name, char *productName, char *sds_name, int iband
   /* Calculate number of scans, and for swath space, check for 
      an integral number of scans */
 
-  printf("productName: %s\n", productName);
-  this->scan_size.l = getNDETinScanFromProductName(productName);
+  this->scan_size.l = getNDETinScanFromGeoProductName(geoProductName);
   this->scan_size.l *= this->ires;
   this->scan_size.s = this->size.s;
   this->nscan = (this->size.l - 1) / this->scan_size.l + 1;
@@ -282,7 +281,6 @@ Input_t *OpenInput(char *file_name, char *productName, char *sds_name, int iband
     strcpy (errstr, "OpenInput: not an integral number of scans");
     return (Input_t *)NULL;
   }
-  printf("number of scans: %d\n", this->nscan);
 
   /* Allocate input buffer */
   

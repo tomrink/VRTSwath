@@ -303,7 +303,7 @@ int main (int argc, const char **argv)
         LOG_ERROR("error updating SDS information", "main");
 
       /* Open input file for the specified SDS and band */
-      input = OpenInput(param->input_file_name, param->productName, param->input_sds_name, 
+      input = OpenInput(param->input_file_name, param->geoProductName, param->input_sds_name, 
         param->iband, param->rank[curr_sds], param->dim[curr_sds], errstr);
       if (input == (Input_t *)NULL) {
         /* This is an invalid SDS for our processing so skip to the next
@@ -437,25 +437,11 @@ int main (int argc, const char **argv)
       if (param->input_space_type != SWATH_SPACE)
         LOG_ERROR("input space type is not SWATH", "main");
 
-      sprintf(msg, "  input lines/samples: %d %d\n", input->size.l,
-        input->size.s);
+      sprintf(msg, "  input lines/samples: %d %d\n", input->size.l, input->size.s);
       LogInfomsg(msg);
-      switch (input->ires)
-      {
-        case 1:
-          LogInfomsg("  input resolution: 780 m\n");
-          break;
-        case 2:
-          LogInfomsg("  input resolution: 500 m\n");
-          break;
-        case 4:
-          LogInfomsg("  input resolution: 250 m\n");
-          break;
-      }
       LogInfomsg("  %% complete: 0%");
 
       /* For each input scan */
-      printf("num scans: %d\n", geoloc->nscan);
       kscan = 0;
       for (iscan = 0; iscan < geoloc->nscan; iscan++)
       {

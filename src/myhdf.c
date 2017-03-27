@@ -944,7 +944,7 @@ bool DetermineResolution(Myhdf_sds_t *sds, Img_coord_int_t *ls_dim, int *ires)
 
 
 bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds, 
-  char *productName, int out_proj_num,
+  char *geoProductName, int out_proj_num,
   double output_pixel_size[MAX_SDS_DIMS])
 /*
 !C*****************************************************************************
@@ -1016,9 +1016,9 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
                               false);
   }
   
-  double pixelSize = getVIIRSpixelResolutionFromProductName(productName);
+  double pixelSize = getVIIRSpixelResolutionFromGeoProductName(geoProductName);
   if (pixelSize == 0) {
-        LOG_RETURN_ERROR(strcat("can't determine pixel size for product: ", productName), 
+        LOG_RETURN_ERROR(strcat("can't determine pixel size for product: ", geoProductName), 
                 "DeterminePixelSize", false);
   }
 
