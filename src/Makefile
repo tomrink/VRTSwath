@@ -1,12 +1,11 @@
 
 CC = gcc
-CFLAGS = -O3 -Wall -W -Wno-switch
-LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -lm -s -lsz -lz -ldl -lm -Wl,-rpath -Wl,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
-LDFLAGS_DUMP = $(HDFLIB) -lm -s
+CFLAGS = -O3 -Wall -W -Wno-switch -g
+LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -lm -lsz -lz -ldl -lm -Wl,-rpath -Wl,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
 MV = mv
 CP = cp
 RM = rm -f
-INCS  = -I../include -I/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/include
+INCS  = -I../include -I../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/include
 
 
 #--------------------------
@@ -37,12 +36,9 @@ EXE = swath2grid
 #-----------------------------
 # Define the object libraries:
 #-----------------------------
-# GEOLIB = $(MODISDIR)/lib/libgeolib.a $(MODISDIR)/lib/libgctp.a
-# HDFLIB = $(MODISDIR)/lib/libhdfeos.a $(MODISDIR)/lib/libmfhdf.a $(MODISDIR)/lib/libdf.a $(MODISDIR)/lib/libjpeg.a $(MODISDIR)/lib/libz.a
-# TIFFLIB = $(MODISDIR)/lib/libgeotiff.a $(MODISDIR)/lib/libtiff.a
 GEOLIB = ../lib/libgctp.a
 HDFLIB = ../lib/libhdfeos.a ../lib/libmfhdf.a ../lib/libdf.a ../lib/libjpeg.a ../lib/libz.a ../lib/libsz.a
-HDF5LIB = -L/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib /home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5_hl.a /home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5.a
+HDF5LIB = -L../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5_hl.a ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5.a
 TIFFLIB = ../lib/libgeotiff.a ../lib/libtiff.a
 
 #-------------------------------------------------------------------
@@ -52,14 +48,8 @@ TIFFLIB = ../lib/libgeotiff.a ../lib/libtiff.a
 all: $(EXE)
 
 swath2grid: resamp.o $(OBJ) $(INC)
-	$(CC) -o swath2grid resamp.o $(OBJ) $(LDFLAGS) -lm -s
+	$(CC) -o swath2grid resamp.o $(OBJ) $(LDFLAGS) -lm
 
-#dumpmeta: dumpmeta.o
-#	$(CC) -o dumpmeta dumpmeta.o $(LDFLAGS_DUMP) -lm -s
-#
-#hdf2hdr: hdf2hdr.o gui_hdr.o $(OBJ) gui_hdr.h
-#	$(CC) -o hdf2hdr hdf2hdr.o gui_hdr.o $(OBJ) $(LDFLAGS) -lm -s
-	
 install:
 	$(MV) swath2grid dumpmeta hdf2hdr ../bin
 
