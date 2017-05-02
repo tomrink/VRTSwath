@@ -56,6 +56,7 @@
 #include "cproj.h"
 #include "const.h"
 #include <float.h>
+#include "space.h"
 
 #define DEBUG
 
@@ -77,11 +78,41 @@ int ConvertCorners(Param_t *param)
   Geo_coord_t geo_coord_p;
   Map_coord_t output_coord_p;
   Geoloc_t *geoloc = NULL;             /* geolocation file */
-  int32 start[MYHDF_MAX_RANK];         /* start reading at this location */
-  int32 nval[MYHDF_MAX_RANK];          /* read this many values */
-
+  
+  int32 start[2];
+  int32 nval[2];
+  
+  float32 ur_lon, ur_lat, ll_lon, ll_lat;
+  
+  Map_coord_t output_coord_UL;
+  Map_coord_t output_coord_LR;
+  Map_coord_t output_coord_MP;
+  
+  Geo_coord_t geo_UL;
+  Geo_coord_t geo_LR;
+  Geo_coord_t geo_UR;
+  Geo_coord_t geo_LL;
+  
+  float *lon_side_a;
+  float *lat_side_a;
+  float *lon_side_b;
+  float *lat_side_b;
+  float *lon_side_c;
+  float *lat_side_c;
+  float *lon_side_d;
+  float *lat_side_d;
+  
+  int userDefinedProjParams = FALSE;
+  
   /* Make the pointers cleaner */
   output_space_def = &(param->output_space_def);
+  
+  for (i=0; i<NPROJ_PARAM; i++) {
+      if (output_space_def->proj_param[i] != -999.0) {
+          userDefinedProjParams = TRUE;
+          break;
+      }
+  }
 
   /* If the output spatial subset type is LINE_SAMPLE, then the UL and LR
      corner points have been provided as line/sample (in input space). First
@@ -93,55 +124,279 @@ int ConvertCorners(Param_t *param)
     ul_line = (int)output_space_def->ul_corner.y;
     lr_samp = (int)output_space_def->lr_corner.x;
     lr_line = (int)output_space_def->lr_corner.y;
-
+    
+    int del_line = lr_line - ul_line;
+    int del_samp = lr_samp - ul_samp;
+    
     /* Open geoloc file */
     geoloc = OpenGeolocSwath(param->geoloc_file_name);
     if (geoloc == (Geoloc_t *)NULL)
       LOG_RETURN_ERROR("bad geolocation file", "ConvertCorners", false);
 
-    /* Grab the UL longitude (0-based start values) */
-    start[0] = ul_line - 1;
-    start[1] = ul_samp - 1;
+    /* Grab the UL to UR longitude (0-based start values) */
+    start[0] = ul_line;
+    start[1] = ul_samp;
     nval[0] = 1;
-    nval[1] = 1;
-    printf("lon id: %d\n",geoloc->sds_lon.id);
-    printf("%d %d\n", ul_samp, ul_line);
-    printf("%d %d\n", lr_samp, lr_line);
-    if (!readData(geoloc->sds_lon.id, start, nval, geoloc->lon_buf)) {
+    nval[1] = del_samp + 1;
+    lon_side_a = calloc(nval[1], sizeof(float32));
+    if (!readData(geoloc->sds_lon.id, start, nval, lon_side_a)) {
         LOG_RETURN_ERROR("reading longitude", "ConvertCorners", false);          
     }    
-    output_space_def->ul_corner.x = geoloc->lon_buf[0];
 
-    /* Grab the UL latitude (0-based start values) */
-    start[0] = ul_line - 1;
-    start[1] = ul_samp - 1;
+    /* Grab the UL to UR latitude (0-based start values) */
+    start[0] = ul_line;
+    start[1] = ul_samp;
     nval[0] = 1;
-    nval[1] = 1;
-    if (!readData(geoloc->sds_lat.id, start, nval, geoloc->lat_buf)) {
+    nval[1] = del_samp + 1;
+    lat_side_a = calloc(nval[1], sizeof(float32));
+    if (!readData(geoloc->sds_lat.id, start, nval, lat_side_a)) {
        LOG_RETURN_ERROR("reading latitude", "ConvertCorners", false);          
     }
-    output_space_def->ul_corner.y = geoloc->lat_buf[0];
 
-    /* Grab the LR longitude (0-based start values) */
-    start[0] = lr_line - 1;
-    start[1] = lr_samp - 1;
-    nval[0] = 1;
+    /* Grab the UR to LR longitude (0-based start values) */
+    start[0] = ul_line;
+    start[1] = ul_samp + del_samp;
+    nval[0] = del_line + 1;
     nval[1] = 1;
-    if (!readData(geoloc->sds_lon.id, start, nval, geoloc->lon_buf)) {
+    lon_side_b = calloc(nval[0], sizeof(float32));
+    if (!readData(geoloc->sds_lon.id, start, nval, lon_side_b)) {
        LOG_RETURN_ERROR("reading longitude", "DeterminePixelSize", false);          
     }   
-    output_space_def->lr_corner.x = geoloc->lon_buf[0];
 
-    /* Grab the LR latitude (0-based start values) */
-    start[0] = lr_line - 1;
-    start[1] = lr_samp - 1;
-    nval[0] = 1;
+    /* Grab the UR to LR latitude (0-based start values) */
+    start[0] = ul_line;
+    start[1] = ul_samp + del_samp;
+    nval[0] = del_line + 1;
     nval[1] = 1;
-    if (!readData(geoloc->sds_lat.id, start, nval, geoloc->lat_buf)) {
+    lat_side_b = calloc(nval[0], sizeof(float32));
+    if (!readData(geoloc->sds_lat.id, start, nval, lat_side_b)) {
        LOG_RETURN_ERROR("reading latitude", "ConvertCorners", false);          
     }    
-    output_space_def->lr_corner.y = geoloc->lat_buf[0];
+     
+    start[0] = ul_line + del_line;
+    start[1] = ul_samp;
+    nval[0] = 1;
+    nval[1] = del_samp + 1;
+    lon_side_c = calloc(nval[1], sizeof(float32));
+    if (!readData(geoloc->sds_lon.id, start, nval, lon_side_c)) {
+       LOG_RETURN_ERROR("reading longitude", "ConvertCorners", false);          
+    }
 
+    start[0] = ul_line + del_line;
+    start[1] = ul_samp;
+    nval[0] = 1;
+    nval[1] = del_samp + 1;
+    lat_side_c = calloc(nval[1], sizeof(float32));
+    if (!readData(geoloc->sds_lat.id, start, nval, lat_side_c)) {
+       LOG_RETURN_ERROR("reading latitude", "ConvertCorners", false);          
+    }
+    
+    start[0] = ul_line;
+    start[1] = ul_samp;
+    nval[0] = del_line + 1;
+    nval[1] = 1;
+    lon_side_d = calloc(nval[0], sizeof(float32));
+    if (!readData(geoloc->sds_lon.id, start, nval, lon_side_d)) {
+       LOG_RETURN_ERROR("reading longitude", "ConvertCorners", false);          
+    }
+
+    start[0] = ul_line;
+    start[1] = ul_samp;
+    nval[0] = del_line + 1;
+    nval[1] = 1;
+    lat_side_d = calloc(nval[0], sizeof(float32));
+    if (!readData(geoloc->sds_lat.id, start, nval, lat_side_d)) {
+       LOG_RETURN_ERROR("reading latitude", "ConvertCorners", false);          
+    }
+    
+    float32 cntrLon[1];
+    float32 cntrLat[1];
+    if (userDefinedProjParams == TRUE) {
+    }
+    else {
+        start[0] = ul_line + del_line/2;
+        start[1] = ul_samp + del_samp/2;
+        nval[0] = 1;
+        nval[1] = 1;
+        if (!readData(geoloc->sds_lon.id, start, nval, cntrLon)) {
+            LOG_RETURN_ERROR("reading longitude", "ConvertCorners", false);          
+        }  
+        if (!readData(geoloc->sds_lat.id, start, nval, cntrLat)) {
+            LOG_RETURN_ERROR("reading latitude", "ConvertCorners", false);          
+        }
+        
+        if (output_space_def->proj_num == 9)  { // Tranverse Mercator
+            output_space_def->proj_param[2] = 1.0;
+        }
+        else {
+            output_space_def->proj_param[2] = cntrLat[0];
+        }
+        output_space_def->proj_param[3] = cntrLat[0];
+        output_space_def->proj_param[4] = cntrLon[0];
+        output_space_def->proj_param[5] = cntrLat[0];
+        output_space_def->proj_param[6] = 0.0;
+        output_space_def->proj_param[7] = 0.0;
+        if (output_space_def->proj_num == 31) { // Integerized Sinusoidal
+            output_space_def->proj_param[8] = 2.0;
+            output_space_def->proj_param[10] = 0.0;
+        }
+    }
+    
+
+    /* Copy the projection parameters to orig_proj_param to use the decimal
+       degree values later (GeoTiff output) */
+    for (i = 0; i < NPROJ_PARAM; i++) {
+         param->output_space_def.orig_proj_param[i] =
+         param->output_space_def.proj_param[i];
+    }
+
+    /* Convert the output projection parameter lat/long values from decimal
+       degrees to DMS */
+    if (!Deg2DMS (param->output_space_def.proj_num,
+                 param->output_space_def.proj_param)) {
+        FreeParam(param);
+        LOG_RETURN_ERROR("error converting projection parameters from decimal degrees to DMS",
+                         "ConvertCorners", false);
+    }  
+
+    output_space_def->pixel_size = param->output_pixel_size[0];
+    output_space_def->img_size.s = 1;
+    output_space_def->img_size.l = 1;
+
+    /* Get the forward and reverse transformation functions */
+    out_space = SetupSpace(output_space_def);
+    if (out_space == (Space_t *)NULL) {
+         LOG_RETURN_ERROR("setting up output space", "ConvertCorners", false); 
+    }
+    
+    minx = FLT_MAX,
+    maxx = -FLT_MAX,
+    miny = FLT_MAX,
+    maxy = -FLT_MAX;
+    
+    for (i=0; i<del_samp; i++) {
+        geo_coord_p.lon = lon_side_a[i]*RAD;
+        geo_coord_p.lat = lat_side_a[i]*RAD;
+        geo_coord_p.is_fill = false;
+        if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
+             &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
+             FreeSpace(out_space);
+             LOG_RETURN_ERROR("converting UL to output map coordinates",
+                          "ConvertCorners", false);
+        }
+        if (output_coord_p.x < minx) minx = output_coord_p.x;
+        if (output_coord_p.x > maxx) maxx = output_coord_p.x;
+        if (output_coord_p.y < miny) miny = output_coord_p.y;
+        if (output_coord_p.y > maxy) maxy = output_coord_p.y;        
+    }
+    for (i=0; i<del_line; i++) {
+        geo_coord_p.lon = lon_side_b[i]*RAD;
+        geo_coord_p.lat = lat_side_b[i]*RAD;
+        geo_coord_p.is_fill = false;
+        if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
+             &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
+             FreeSpace(out_space);
+             LOG_RETURN_ERROR("converting UL to output map coordinates",
+                          "ConvertCorners", false);
+        }
+        if (output_coord_p.x < minx) minx = output_coord_p.x;
+        if (output_coord_p.x > maxx) maxx = output_coord_p.x;
+        if (output_coord_p.y < miny) miny = output_coord_p.y;
+        if (output_coord_p.y > maxy) maxy = output_coord_p.y;        
+    }
+    for (i=0; i<del_samp; i++) {
+        geo_coord_p.lon = lon_side_c[i]*RAD;
+        geo_coord_p.lat = lat_side_c[i]*RAD;
+        geo_coord_p.is_fill = false;
+        if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
+             &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
+             FreeSpace(out_space);
+             LOG_RETURN_ERROR("converting UL to output map coordinates",
+                          "ConvertCorners", false);
+        }
+        if (output_coord_p.x < minx) minx = output_coord_p.x;
+        if (output_coord_p.x > maxx) maxx = output_coord_p.x;
+        if (output_coord_p.y < miny) miny = output_coord_p.y;
+        if (output_coord_p.y > maxy) maxy = output_coord_p.y;        
+    }
+    for (i=0; i<del_line; i++) {
+        geo_coord_p.lon = lon_side_d[i]*RAD;
+        geo_coord_p.lat = lat_side_d[i]*RAD;
+        geo_coord_p.is_fill = false;
+        if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
+             &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
+             FreeSpace(out_space);
+             LOG_RETURN_ERROR("converting UL to output map coordinates",
+                          "ConvertCorners", false);
+        }
+        if (output_coord_p.x < minx) minx = output_coord_p.x;
+        if (output_coord_p.x > maxx) maxx = output_coord_p.x;
+        if (output_coord_p.y < miny) miny = output_coord_p.y;
+        if (output_coord_p.y > maxy) maxy = output_coord_p.y;        
+    }
+    
+     for (i = 0; i < param->num_input_sds; i++)
+     {
+       if (output_space_def->proj_num == PROJ_GEO)
+       {
+         /* Convert Geographic pixel size from degrees to radians */
+         param->output_pixel_size[i] *= RAD;
+       }
+
+       /* Calculate the number of output lines and samples */
+       param->output_img_size[i].s =
+         (int) ((maxx - minx) / param->output_pixel_size[i] + 0.5);
+       param->output_img_size[i].l =
+         (int) ((maxy - miny) / param->output_pixel_size[i] + 0.5);
+
+#ifdef DEBUG
+       if (output_space_def->proj_num == PROJ_GEO)
+         printf ("Pixel size is %f\n", param->output_pixel_size[i]*DEG);
+       else
+         printf ("Pixel size is %f\n", param->output_pixel_size[i]);
+       printf ("Output number of lines is %d\n",
+         param->output_img_size[i].l);
+       printf ("Output number of samples is %d\n",
+         param->output_img_size[i].s);
+#endif
+     }
+
+     /* Use the first pixel size and number of lines/samples for the
+        rest of the calculations */
+     output_space_def->pixel_size = param->output_pixel_size[0];
+     output_space_def->img_size.l = param->output_img_size[0].l;
+     output_space_def->img_size.s = param->output_img_size[0].s;
+
+     /* Redefine the output coords to use the minimum bounding box in
+        output projection coords. Also make the LR corner a factor of the
+        number of lines and samples. */
+     output_space_def->ul_corner.x = minx;
+     output_space_def->ul_corner.y = maxy;  
+     
+     output_space_def->lr_corner.x = output_space_def->ul_corner.x +
+         output_space_def->img_size.s * output_space_def->pixel_size;
+     
+     output_space_def->lr_corner.y = output_space_def->ul_corner.y -
+         output_space_def->img_size.l * output_space_def->pixel_size;
+
+#ifdef DEBUG
+     if (output_space_def->proj_num == PROJ_GEO)
+     {
+       printf ("Output UL projection coords: %f %f\n",
+         output_space_def->ul_corner.x*DEG, output_space_def->ul_corner.y*DEG);
+       printf ("Output LR projection coords: %f %f\n",
+         output_space_def->lr_corner.x*DEG, output_space_def->lr_corner.y*DEG);
+     }
+     else
+     {
+       printf ("Output UL projection coords: %f %f\n",
+         output_space_def->ul_corner.x, output_space_def->ul_corner.y);
+       printf ("Output LR projection coords: %f %f\n",
+         output_space_def->lr_corner.x, output_space_def->lr_corner.y);
+     }
+#endif    
+    
+    
     /* Close geolocation file */
     if (!CloseGeoloc(geoloc)) {
       FreeGeoloc(geoloc);
@@ -149,8 +404,18 @@ int ConvertCorners(Param_t *param)
     }
 
     /* Free geolocation structure */
-    if (!FreeGeoloc(geoloc))
+    if (!FreeGeoloc(geoloc)) {
       LOG_RETURN_ERROR("freeing geoloc file struct", "ConvertCorners", false);
+    } 
+    
+    free(lon_side_a);
+    free(lat_side_a);
+    free(lon_side_b);
+    free(lat_side_b);
+    free(lon_side_c);
+    free(lat_side_c);
+    free(lon_side_d);
+    free(lat_side_d);
   } /* if LINE_SAMPLE */
 
   /* If the output spatial subset type is LAT_LONG, use the lat/long corner
@@ -158,9 +423,42 @@ int ConvertCorners(Param_t *param)
      lines/samples in the output image. If the output spatial subset type
      is LINE_SAMPLE, then the corner points have been converted to lat/long.
      So handle them as LAT_LONG. */
-  if (param->output_spatial_subset_type == LAT_LONG ||
-      param->output_spatial_subset_type == LINE_SAMPLE)
+  else if (param->output_spatial_subset_type == LAT_LONG)
   {
+      if (userDefinedProjParams == FALSE) {
+          if (output_space_def->proj_num == 9)  { // Tranverse Mercator
+             output_space_def->proj_param[2] = 1.0;
+          }
+          else {
+             output_space_def->proj_param[2] = output_space_def->ul_corner.y;
+          }          
+          param->output_space_def.proj_param[3] = output_space_def->ul_corner.y;
+          param->output_space_def.proj_param[4] = output_space_def->ul_corner.x;
+          param->output_space_def.proj_param[5] = output_space_def->ul_corner.y;
+          param->output_space_def.proj_param[6] = 0.0;
+          param->output_space_def.proj_param[7] = 0.0;
+          if (output_space_def->proj_num == 31) { // Integerized Sinusoidal
+              param->output_space_def.proj_param[8] = 2.0;
+              param->output_space_def.proj_param[10] = 0.0;
+          }
+      }
+
+      /* Convert the output projection parameter lat/long values from decimal
+         degrees to DMS */
+      if (!Deg2DMS (param->output_space_def.proj_num,
+                 param->output_space_def.proj_param)) {
+        FreeParam(param);
+        LOG_RETURN_ERROR("error converting projection parameters from decimal degrees to DMS",
+                         "ConvertCorners", false);
+      }
+      
+      /* Copy the projection parameters to orig_proj_param to use the decimal
+         degree values later (GeoTiff output) */
+      for (i = 0; i < NPROJ_PARAM; i++) {
+          param->output_space_def.orig_proj_param[i] =
+          param->output_space_def.proj_param[i];
+      }      
+      
      /* Get the UR and LL lat/longs from the UL and LR lat/longs.
         Convert the corner points to RADIANS for the GCTP call. */
      output_space_def->ul_corner.x *= RAD;
@@ -171,10 +469,6 @@ int ConvertCorners(Param_t *param)
      ul.y = output_space_def->ul_corner.y;
      lr.x = output_space_def->lr_corner.x;
      lr.y = output_space_def->lr_corner.y;
-     ur.x = lr.x;
-     ur.y = ul.y;
-     ll.x = ul.x;
-     ll.y = lr.y;
 
      /* Use the first pixel size for these calculations */
      if (output_space_def->proj_num == PROJ_GEO)
@@ -214,11 +508,11 @@ int ConvertCorners(Param_t *param)
      if (out_space == (Space_t *)NULL)
          LOG_RETURN_ERROR("setting up output space", "ConvertCorners", false);
 
-     /* UL */
-#ifdef DEBUG
-     printf ("Input UL lat/long (DEG): %f %f\n", ul.y*DEG, ul.x*DEG);
-     printf ("Input UL lat/long (RAD): %f %f\n", ul.y, ul.x);
-#endif
+     /* UL --------------------------------------------------*/
+     #ifdef DEBUG
+        printf ("Input UL lat/long (DEG): %f %f\n", ul.y*DEG, ul.x*DEG);
+        printf ("Input UL lat/long (RAD): %f %f\n", ul.y, ul.x);
+     #endif
      geo_coord_p.lon = ul.x;
      geo_coord_p.lat = ul.y;
      geo_coord_p.is_fill = false;
@@ -228,69 +522,21 @@ int ConvertCorners(Param_t *param)
          LOG_RETURN_ERROR("converting UL to output map coordinates",
                       "ConvertCorners", false);
      }
-#ifdef DEBUG
-     printf ("Output UL projection coords x/y: %f %f\n", output_coord_p.x,
-         output_coord_p.y);
-#endif
-
+     #ifdef DEBUG
+        printf ("Output UL projection coords x/y: %f %f\n", output_coord_p.x, output_coord_p.y);
+     #endif
+     output_coord_UL.x = output_coord_p.x;
+     output_coord_UL.y = output_coord_p.y;
      if (output_coord_p.x < minx) minx = output_coord_p.x;
      if (output_coord_p.x > maxx) maxx = output_coord_p.x;
      if (output_coord_p.y < miny) miny = output_coord_p.y;
      if (output_coord_p.y > maxy) maxy = output_coord_p.y;
 
-  /* UR */
-#ifdef DEBUG
-     printf ("Input UR lat/long (DEG): %f %f\n", ur.y*DEG, ur.x*DEG);
-     printf ("Input UR lat/long (RAD): %f %f\n", ur.y, ur.x);
-#endif
-     geo_coord_p.lon = ur.x;
-     geo_coord_p.lat = ur.y;
-     geo_coord_p.is_fill = false;
-     if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
-         &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
-         FreeSpace(out_space);
-         LOG_RETURN_ERROR("converting UR to output map coordinates",
-                      "ConvertCorners", false);
-     }
-#ifdef DEBUG
-     printf ("Output UR projection coords x/y: %f %f\n", output_coord_p.x,
-         output_coord_p.y);
-#endif
-
-     if (output_coord_p.x < minx) minx = output_coord_p.x;
-     if (output_coord_p.x > maxx) maxx = output_coord_p.x;
-     if (output_coord_p.y < miny) miny = output_coord_p.y;
-     if (output_coord_p.y > maxy) maxy = output_coord_p.y;
-
-  /* LL */
-#ifdef DEBUG
-     printf ("Input LL lat/long (DEG): %f %f\n", ll.y*DEG, ll.x*DEG);
-     printf ("Input LL lat/long (RAD): %f %f\n", ll.y, ll.x);
-#endif
-     geo_coord_p.lon = ll.x;
-     geo_coord_p.lat = ll.y;
-     geo_coord_p.is_fill = false;
-     if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
-         &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
-         FreeSpace(out_space);
-         LOG_RETURN_ERROR("converting LL to output map coordinates",
-                      "ConvertCorners", false);
-     }
-#ifdef DEBUG
-     printf ("Output LL projection coords x/y: %f %f\n", output_coord_p.x,
-         output_coord_p.y);
-#endif
-
-     if (output_coord_p.x < minx) minx = output_coord_p.x;
-     if (output_coord_p.x > maxx) maxx = output_coord_p.x;
-     if (output_coord_p.y < miny) miny = output_coord_p.y;
-     if (output_coord_p.y > maxy) maxy = output_coord_p.y;
-
-     /* LR */
-#ifdef DEBUG
-     printf ("Input LR lat/long (DEG): %f %f\n", lr.y*DEG, lr.x*DEG);
-     printf ("Input LR lat/long (RAD): %f %f\n", lr.y, lr.x);
-#endif
+     /* LR -------------------------------------------------------*/
+     #ifdef DEBUG
+        printf ("Input LR lat/long (DEG): %f %f\n", lr.y*DEG, lr.x*DEG);
+        printf ("Input LR lat/long (RAD): %f %f\n", lr.y, lr.x);
+     #endif
      geo_coord_p.lon = lr.x;
      geo_coord_p.lat = lr.y;
      geo_coord_p.is_fill = false;
@@ -300,98 +546,116 @@ int ConvertCorners(Param_t *param)
          LOG_RETURN_ERROR("converting LR to output map coordinates",
                       "ConvertCorners", false);
      }
-#ifdef DEBUG
-     printf ("Output LR projection coords x/y: %f %f\n", output_coord_p.x,
-         output_coord_p.y);
-#endif
-
-     if (output_coord_p.x < minx) minx = output_coord_p.x;
-     if (output_coord_p.x > maxx) maxx = output_coord_p.x;
-     if (output_coord_p.y < miny) miny = output_coord_p.y;
-     if (output_coord_p.y > maxy) maxy = output_coord_p.y;
-
-     /* Walk the boundary of the image looking for the min and max x/y coords.
-        Check 5 points along each boundary. */
-     /* Left */
-     geo_coord_p.lon = ul.x;
-     geo_coord_p.is_fill = false;
-     deg_inc = (ul.y - ll.y) / 5.0;
-     for (i = 0; i < 5; i++)
-     {
-       geo_coord_p.lat = ul.y - i * deg_inc;
-       if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
-           &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
-           FreeSpace(out_space);
-           LOG_RETURN_ERROR("converting left side to output map coordinates",
-                        "ConvertCorners", false);
-       }
-
-       if (output_coord_p.x < minx) minx = output_coord_p.x;
-       if (output_coord_p.x > maxx) maxx = output_coord_p.x;
-       if (output_coord_p.y < miny) miny = output_coord_p.y;
-       if (output_coord_p.y > maxy) maxy = output_coord_p.y;
+     #ifdef DEBUG
+        printf ("Output LR projection coords x/y: %f %f\n", output_coord_p.x, output_coord_p.y);
+     #endif
+     output_coord_LR.x = output_coord_p.x;
+     output_coord_LR.y = output_coord_p.y;
+   
+     if (userDefinedProjParams == TRUE) {
+         if (output_coord_p.x < minx) minx = output_coord_p.x;
+         if (output_coord_p.x > maxx) maxx = output_coord_p.x;
+         if (output_coord_p.y < miny) miny = output_coord_p.y;
+         if (output_coord_p.y > maxy) maxy = output_coord_p.y;        
      }
+     else {
+         output_coord_MP.x = output_coord_UL.x + (output_coord_LR.x - output_coord_UL.x)/2;
+         output_coord_MP.y = output_coord_UL.y + (output_coord_LR.y - output_coord_UL.y)/2;
 
-     /* Right */
-     geo_coord_p.lon = ur.x;
-     geo_coord_p.is_fill = false;
-     deg_inc = (ur.y - lr.y) / 5.0;
-     for (i = 0; i < 5; i++)
-     {
-       geo_coord_p.lat = ur.y - i * deg_inc;
-       if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
-           &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
-           FreeSpace(out_space);
-           LOG_RETURN_ERROR("converting right side to output map coordinates",
-                        "ConvertCorners", false);
-       }
+         if (out_space->inv_trans(output_coord_MP.x, output_coord_MP.y, &geo_coord_p.lon, &geo_coord_p.lat) != GCTP_OK) {
+            FreeSpace(out_space);
+            LOG_RETURN_ERROR("converting LR to output lat/long coordinates", "ConvertCorners", false);
+         }   
+         #ifdef DEBUG
+            printf("Computed MidPoint lon,lat: %f, %f \n", geo_coord_p.lon*DEG, geo_coord_p.lat*DEG);
+         #endif
 
-       if (output_coord_p.x < minx) minx = output_coord_p.x;
-       if (output_coord_p.x > maxx) maxx = output_coord_p.x;
-       if (output_coord_p.y < miny) miny = output_coord_p.y;
-       if (output_coord_p.y > maxy) maxy = output_coord_p.y;
-     }
+         for (i = 0; i < NPROJ_PARAM; i++) {
+             param->output_space_def.proj_param[i] = param->output_space_def.orig_proj_param[i];
+         }
+         param->output_space_def.proj_param[2] = geo_coord_p.lat*DEG;
+         param->output_space_def.proj_param[3] = geo_coord_p.lat*DEG;         
+         param->output_space_def.proj_param[4] = geo_coord_p.lon*DEG;
+         param->output_space_def.proj_param[5] = geo_coord_p.lat*DEG;
 
-     /* Top */
-     geo_coord_p.lat = ul.y;
-     geo_coord_p.is_fill = false;
-     deg_inc = (ul.x - ur.x) / 5.0;
-     for (i = 0; i < 5; i++)
-     {
-       geo_coord_p.lon = ul.x - i * deg_inc;
-       if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
-           &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
-           FreeSpace(out_space);
-           LOG_RETURN_ERROR("converting top side to output map coordinates",
-                        "ConvertCorners", false);
-       }
+          /* Copy the projection parameters to orig_proj_param to use the decimal
+             degree values later (GeoTiff output) */
+          for (i = 0; i < NPROJ_PARAM; i++) {
+             param->output_space_def.orig_proj_param[i] = param->output_space_def.proj_param[i];
+          }
 
-       if (output_coord_p.x < minx) minx = output_coord_p.x;
-       if (output_coord_p.x > maxx) maxx = output_coord_p.x;
-       if (output_coord_p.y < miny) miny = output_coord_p.y;
-       if (output_coord_p.y > maxy) maxy = output_coord_p.y;
-     }
+          /* Convert the output projection parameter lat/long values from decimal
+             degrees to DMS */
+          if (!Deg2DMS (param->output_space_def.proj_num,
+                     param->output_space_def.proj_param)) {
+            FreeParam(param);
+            LOG_RETURN_ERROR("error converting projection parameters from decimal degrees to DMS",
+                             "ConvertCorners", false);
+          }         
 
-     /* Bottom */
-     geo_coord_p.lat = ll.y;
-     geo_coord_p.is_fill = false;
-     deg_inc = (ll.x - lr.x) / 5.0;
-     for (i = 0; i < 5; i++)
-     {
-       geo_coord_p.lon = ll.x - i * deg_inc;
-       if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
-           &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
-           FreeSpace(out_space);
-           LOG_RETURN_ERROR("converting bottom side to output map coordinates",
-                        "ConvertCorners", false);
-       }
+         /* reset projection center to MP. Recalculate map coord UL, LR*/
+         out_space = SetupSpace(output_space_def);
+         if (out_space == (Space_t *)NULL)
+             LOG_RETURN_ERROR("setting up output space", "ConvertCorners", false);
 
-       if (output_coord_p.x < minx) minx = output_coord_p.x;
-       if (output_coord_p.x > maxx) maxx = output_coord_p.x;
-       if (output_coord_p.y < miny) miny = output_coord_p.y;
-       if (output_coord_p.y > maxy) maxy = output_coord_p.y;
-     }
 
+         minx = FLT_MAX,
+         maxx = -FLT_MAX,
+         miny = FLT_MAX,
+         maxy = -FLT_MAX;
+
+         /* UL --------------------------------------------------*/
+         #ifdef DEBUG
+            printf ("Input UL lat/long (DEG): %f %f\n", ul.y*DEG, ul.x*DEG);
+            printf ("Input UL lat/long (RAD): %f %f\n", ul.y, ul.x);
+         #endif
+         geo_coord_p.lon = ul.x;
+         geo_coord_p.lat = ul.y;
+         geo_coord_p.is_fill = false;
+         if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
+             &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
+             FreeSpace(out_space);
+             LOG_RETURN_ERROR("converting UL to output map coordinates",
+                          "ConvertCorners", false);
+         }
+         #ifdef DEBUG
+            printf ("Output UL projection coords x/y: %f %f\n", output_coord_p.x, output_coord_p.y);
+         #endif
+         output_coord_UL.x = output_coord_p.x;
+         output_coord_UL.y = output_coord_p.y;
+         if (output_coord_p.x < minx) minx = output_coord_p.x;
+         if (output_coord_p.x > maxx) maxx = output_coord_p.x;
+         if (output_coord_p.y < miny) miny = output_coord_p.y;
+         if (output_coord_p.y > maxy) maxy = output_coord_p.y;     
+
+         /* LR -------------------------------------------------------*/
+         #ifdef DEBUG
+            printf ("Input LR lat/long (DEG): %f %f\n", lr.y*DEG, lr.x*DEG);
+            printf ("Input LR lat/long (RAD): %f %f\n", lr.y, lr.x);
+         #endif
+         geo_coord_p.lon = lr.x;
+         geo_coord_p.lat = lr.y;
+         geo_coord_p.is_fill = false;
+         if (out_space->for_trans(geo_coord_p.lon, geo_coord_p.lat,
+             &output_coord_p.x, &output_coord_p.y) != GCTP_OK) {
+             FreeSpace(out_space);
+             LOG_RETURN_ERROR("converting LR to output map coordinates",
+                          "ConvertCorners", false);
+         }
+         #ifdef DEBUG
+            printf ("Output LR projection coords x/y: %f %f\n", output_coord_p.x, output_coord_p.y);
+         #endif
+         output_coord_LR.x = output_coord_p.x;
+         output_coord_LR.y = output_coord_p.y;     
+
+         if (output_coord_p.x < minx) minx = output_coord_p.x;
+         if (output_coord_p.x > maxx) maxx = output_coord_p.x;
+         if (output_coord_p.y < miny) miny = output_coord_p.y;
+         if (output_coord_p.y > maxy) maxy = output_coord_p.y;
+
+     } /* if LAT_LONG */
+
+     
      /* The pixel size and number of lines/samples is specified for each
         SDS.  The overall UL and LR corners will be the same for each SDS,
         however the pixel size and number of lines/samples might be
@@ -410,16 +674,16 @@ int ConvertCorners(Param_t *param)
        param->output_img_size[i].l =
          (int) ((maxy - miny) / param->output_pixel_size[i] + 0.5);
 
-#ifdef DEBUG
-       if (output_space_def->proj_num == PROJ_GEO)
-         printf ("Pixel size is %f\n", param->output_pixel_size[i]*DEG);
-       else
-         printf ("Pixel size is %f\n", param->output_pixel_size[i]);
-       printf ("Output number of lines is %d\n",
-         param->output_img_size[i].l);
-       printf ("Output number of samples is %d\n",
-         param->output_img_size[i].s);
-#endif
+       #ifdef DEBUG
+           if (output_space_def->proj_num == PROJ_GEO)
+             printf ("Pixel size is %f\n", param->output_pixel_size[i]*DEG);
+           else
+             printf ("Pixel size is %f\n", param->output_pixel_size[i]);
+           printf ("Output number of lines is %d\n",
+             param->output_img_size[i].l);
+           printf ("Output number of samples is %d\n",
+             param->output_img_size[i].s);
+       #endif
      }
 
      /* Use the first pixel size and number of lines/samples for the
@@ -431,29 +695,31 @@ int ConvertCorners(Param_t *param)
      /* Redefine the output coords to use the minimum bounding box in
         output projection coords. Also make the LR corner a factor of the
         number of lines and samples. */
-     output_space_def->ul_corner.x = minx;
-     output_space_def->ul_corner.y = maxy;
+     output_space_def->ul_corner.x = output_coord_UL.x;
+     output_space_def->ul_corner.y = output_coord_UL.y;  
+     
      output_space_def->lr_corner.x = output_space_def->ul_corner.x +
          output_space_def->img_size.s * output_space_def->pixel_size;
+     
      output_space_def->lr_corner.y = output_space_def->ul_corner.y -
          output_space_def->img_size.l * output_space_def->pixel_size;
 
-#ifdef DEBUG
-     if (output_space_def->proj_num == PROJ_GEO)
-     {
-       printf ("Output UL projection coords: %f %f\n",
-         output_space_def->ul_corner.x*DEG, output_space_def->ul_corner.y*DEG);
-       printf ("Output LR projection coords: %f %f\n",
-         output_space_def->lr_corner.x*DEG, output_space_def->lr_corner.y*DEG);
-     }
-     else
-     {
-       printf ("Output UL projection coords: %f %f\n",
-         output_space_def->ul_corner.x, output_space_def->ul_corner.y);
-       printf ("Output LR projection coords: %f %f\n",
-         output_space_def->lr_corner.x, output_space_def->lr_corner.y);
-     }
-#endif
+     #ifdef DEBUG
+         if (output_space_def->proj_num == PROJ_GEO)
+         {
+           printf ("Output UL projection coords: %f %f\n",
+             output_space_def->ul_corner.x*DEG, output_space_def->ul_corner.y*DEG);
+           printf ("Output LR projection coords: %f %f\n",
+             output_space_def->lr_corner.x*DEG, output_space_def->lr_corner.y*DEG);
+         }
+         else
+         {
+           printf ("Output UL projection coords: %f %f\n",
+             output_space_def->ul_corner.x, output_space_def->ul_corner.y);
+           printf ("Output LR projection coords: %f %f\n",
+             output_space_def->lr_corner.x, output_space_def->lr_corner.y);
+         }
+     #endif
   }
 
   /* If the output spatial subset type is PROJ_COORDS, use the UL and LR
