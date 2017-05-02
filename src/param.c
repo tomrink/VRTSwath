@@ -179,6 +179,7 @@ Param_t *GetParam(int argc, const char **argv)
   Geo_coord_t ul_corner;
   Geo_coord_t lr_corner;
   int copy_dim[MYHDF_MAX_RANK];
+  Img_coord_int_t swathDims;
 
   /* Create the Param data structure */
   this = (Param_t *)malloc(sizeof(Param_t));
@@ -203,7 +204,8 @@ Param_t *GetParam(int argc, const char **argv)
     this->output_img_size[ip].l = -1;
     this->output_img_size[ip].s = -1;
     this->output_dt_arr[ip] = -1;
-    this->ires[ip] = -1;
+    // Always '1' for VRTSwath
+    this->ires[ip] = 1;
     this->fill_value[ip] = -1.0;
 
     for (jp = 0; jp < MAX_VAR_DIMS; jp++)
@@ -222,11 +224,11 @@ Param_t *GetParam(int argc, const char **argv)
   this->iband = -1;
   this->kernel_type = NN;
 
-  this->output_space_def.proj_num = -1;
+  this->output_space_def.proj_num = 11;
   for (ip = 0; ip < NPROJ_PARAM; ip++)
-    this->output_space_def.proj_param[ip] = 0.0;
+    this->output_space_def.proj_param[ip] = -999.0;
   for (ip = 0; ip < NPROJ_PARAM; ip++)
-    this->output_space_def.orig_proj_param[ip] = 0.0;
+    this->output_space_def.orig_proj_param[ip] = -999.0;
   this->output_space_def.ul_corner.x = -1.0;
   this->output_space_def.ul_corner.y = -1.0;
   this->output_space_def.ul_corner_geo.lat = -1.0;
@@ -241,7 +243,7 @@ Param_t *GetParam(int argc, const char **argv)
   this->output_space_def.img_size.s = -1;
   this->output_space_def.zone = 0;
   this->output_space_def.zone_set = false;
-  this->output_space_def.sphere = -1;
+  this->output_space_def.sphere = 8;
   this->output_space_def.isin_type = SPACE_NOT_ISIN;
   this->output_spatial_subset_type = LAT_LONG;
 
@@ -396,48 +398,19 @@ Param_t *GetParam(int argc, const char **argv)
   /* Loop through all the SDSs and determine their resolution */
   for (i = 0; i < this->num_input_sds; i++)
   {
-    /* Loop through all the bands in the current SDS until we find one
-       that will be processed. Use that band to get the resolution of the
-       SDS, since all the bands in the SDS will be the same resolution. */
-    for (j = 0; j < this->input_sds_nbands[i]; j++)
-    {
-      /* Is this band one that should be processed? */
-      if (!this->input_sds_bands[i][j])
-        continue;
-
-      /* Create the input_sds_name which is "SDSname, band" */
-      if (this->input_sds_nbands[i] == 1)
-      {
-        /* 2D product so the band number is not needed */
         sprintf(tmp_sds_name, "%s", this->input_sds_name_list[i]);
-      }
-      else
-      {
-        /* 3D product so the band number is required */
-        sprintf(tmp_sds_name, "%s, %d", this->input_sds_name_list[i], j);
-      }
 
-      this->input_sds_name = strdup (tmp_sds_name);
-      if (this->input_sds_name == NULL) {
-        sprintf(msg, "resamp: error creating input SDS band name");
-	LogInfomsg(msg);
-        FreeParam(this);
-        return (Param_t *)NULL;
-      }
+        this->input_sds_name = strdup (tmp_sds_name);
+        if (this->input_sds_name == NULL) {
+           sprintf(msg, "resamp: error creating input SDS band name");
+	   LogInfomsg(msg);
+           FreeParam(this);
+           return (Param_t *)NULL;
+        }
 
-#ifdef DEBUG
-      printf ("Getting param %s ...\n", this->input_sds_name);
-#endif
-
-      // TDR, skip this. VIIRS datasets only have rank=2
-      /* Update the system to process the current SDS and band
-      if (!update_sds_info(i, this)) {
-        sprintf(msg, "resamp: error updating SDS information");
-	LogInfomsg(msg);
-        FreeParam(this);
-        return (Param_t *)NULL;
-      }
-      */
+      #ifdef DEBUG
+         printf ("Getting param %s ...\n", this->input_sds_name);
+      #endif
 
       /* Make a copy of the dim parameters, since they get modified */
       for (ip = 0; ip < MYHDF_MAX_RANK; ip++) {
@@ -448,28 +421,14 @@ Param_t *GetParam(int argc, const char **argv)
       input = OpenInput(this->input_file_name, this->geoProductName, this->input_sds_name,
                         this->iband, this->rank[i], copy_dim, errstr);
       if (input == (Input_t *)NULL) {
-        /* This is an invalid SDS for our processing so skip to the next
-           SDS. We will only process SDSs that are at the 1km, 500m, or
-           250m resolution (i.e. a factor of 1, 2, or 4 compared to the
-           1km geolocation lat/long data). We also only process CHAR8,
-           INT8, UINT8, INT16, and UINT16 data types. */
-#ifdef DEBUG
-        printf("%s\n", errstr);
-        printf("%s %ld: param, not processing SDS/band\n\n", (__FILE__),
-          (long)(__LINE__));
-#endif
-        break;
+           sprintf(msg, "param.c: error creating Input_t from OpenInput");
+	   LogInfomsg(msg);
+           FreeParam(this);
+           return (Param_t *)NULL;          
       }
 
-      /* Determine the resolution of each of the input SDSs */
-      if (!DetermineResolution(&input->sds, &input->dim, &this->ires[i])) {
-        sprintf(msg, "resamp: error determining input resolution\n");
-	LogInfomsg(msg);
-        CloseInput(input);
-        FreeInput(input);
-        FreeParam(this);
-        return (Param_t *)NULL; 
-      }
+      swathDims.s = input->size.s;
+      swathDims.l = input->size.l;
 
       /* Close input file */
       if (!CloseInput(input)) {
@@ -488,9 +447,6 @@ Param_t *GetParam(int argc, const char **argv)
         return (Param_t *)NULL;
       }
 
-      /* We only need one band in this SDS, so break out of the loop */
-      break;
-    }  /* for (j = 0; j < this->input_sds_nbands[i]; j++) */
   }  /* for (i = 0; i < this->num_input_sds; i++) */
 
   /* Verify that at least one output pixel size value is defined */
@@ -539,32 +495,17 @@ Param_t *GetParam(int argc, const char **argv)
       this->multires = true;
   }
 
-  /* If the UL or LR corner was not specified, then use the bounding coords */
+  /* If the UL or LR corner was not specified, then use full swath */
   if (!this->output_space_def.ul_corner_set ||
-      !this->output_space_def.lr_corner_set) {
-    /* Read the BOUNDING coords, by default */
-    if (!ReadBoundCoords(this->input_file_name, &ul_corner, &lr_corner)) {
-      sprintf(msg, "resamp: error reading BOUNDING COORDS from metadata. "
-        "Therefore, in order to process this data, the output spatial "
-        "subsetting will need to be specified.\n");
-      LogInfomsg(msg);
-      sprintf(msg, "%s\n", USAGE);
-      LogInfomsg(msg);
-      FreeParam(this);
-      return (Param_t *)NULL; 
-    }
-    else {
-      /* Store all initial corner points in the x/y corner structure.
-         The call to convert_corners will handle moving to the lat/long
-         structure location. */
+      !this->output_space_def.lr_corner_set) 
+  {
       this->output_space_def.ul_corner_set = true;
       this->output_space_def.lr_corner_set = true;
-      this->output_space_def.ul_corner.x = ul_corner.lon;
-      this->output_space_def.ul_corner.y = ul_corner.lat;
-      this->output_space_def.lr_corner.x = lr_corner.lon;
-      this->output_space_def.lr_corner.y = lr_corner.lat;
-      this->output_spatial_subset_type = LAT_LONG;
-    }
+      this->output_spatial_subset_type = LINE_SAMPLE;
+      this->output_space_def.ul_corner.x = 0;
+      this->output_space_def.ul_corner.y = 0;
+      this->output_space_def.lr_corner.x = swathDims.s - 1;
+      this->output_space_def.lr_corner.y = swathDims.l - 1;
   }
 
   if ((this->output_space_def.proj_param[0] <= 0.0) && 
@@ -590,24 +531,6 @@ Param_t *GetParam(int argc, const char **argv)
 
   if (this->output_space_def.proj_num == 31) /* ISINUS => proj_num = 31 */
     this->output_space_def.isin_type= SPACE_ISIN_NEST_1;
-
-  /* Copy the projection parameters to orig_proj_param to use the decimal
-     degree values later (GeoTiff output) */
-  for (i = 0; i < NPROJ_PARAM; i++) {
-    this->output_space_def.orig_proj_param[i] =
-      this->output_space_def.proj_param[i];
-  }
-
-  /* Convert the output projection parameter lat/long values from decimal
-     degrees to DMS */
-  if (!Deg2DMS (this->output_space_def.proj_num,
-                this->output_space_def.proj_param)) {
-    sprintf(msg, "resamp: error converting projection parameters from"
-            "decimal degrees to DMS\n");
-    LogInfomsg(msg);
-    FreeParam(this);
-    return (Param_t *)NULL; 
-  }
 
   /* Use the UL and LR corner points to get the UL corner in output
      space and the number of lines/samples in the output image. This must
