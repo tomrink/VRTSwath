@@ -1176,3 +1176,64 @@ bool readData(hid_t dataset, int *start, int *count, void *buf) {
     
     return true;
 }
+
+hid_t getNativeType(hid_t datatype) {
+    hid_t outtype;
+    H5T_class_t t_class;
+    H5T_order_t order;
+    size_t      size;
+    H5T_sign_t  sign;
+    
+    char msg[M_MSG_LEN+1];
+    
+    t_class   = H5Tget_class(datatype);
+    order     = H5Tget_order(datatype);
+    size      = H5Tget_size(datatype);
+    sign      = H5Tget_sign(datatype);
+
+    if (t_class == H5T_INTEGER) {
+        if (size == 2) {
+            outtype = H5T_NATIVE_SHORT;
+            if (sign == H5T_SGN_NONE) {
+                outtype = H5T_NATIVE_USHORT;
+            }
+        }
+        else if (size == 4) {
+            outtype = H5T_NATIVE_INT;
+            if (sign == H5T_SGN_NONE) {
+                outtype = H5T_NATIVE_UINT;
+            }            
+        }
+        else if (size == 8) {
+            outtype = H5T_NATIVE_LONG;
+            if (sign == H5T_SGN_NONE) {
+                outtype = H5T_NATIVE_ULONG;
+            }            
+        }
+        else {
+            sprintf(msg, "can only handle INTEGER sizes of 2, 4, 8, not: %d \n", size);
+            LogInfomsg(msg);
+            return NULL;            
+        }
+    }
+    else if (t_class == H5T_FLOAT) {
+        if (size == 4) {
+            outtype = H5T_NATIVE_FLOAT;
+        }
+        else if (size == 8) {
+            outtype = H5T_NATIVE_DOUBLE;
+        }
+        else {
+            sprintf(msg, "can't handle dataset FLOAT type with size: %d \n", size);
+            LogInfomsg(msg);
+            return NULL;
+        }
+    }
+    else {
+        sprintf(msg, "can only handle numeric (FLOAT, INTEGER) datatypes, not: %d \n", t_class);
+        LogInfomsg(msg);
+        return NULL;
+    }
+    
+    return outtype;
+}
