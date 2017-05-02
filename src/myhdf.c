@@ -999,7 +999,7 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
       nval[0] = 1;
       nval[1] = geoloc->scan_size.s;
 
-      if (readData(geoloc->sds_lon.id, start, nval, geoloc->lon_buf)) {
+      if (readData(geoloc->sds_lon.id, start, nval, geoloc->lon_buf) == FALSE) {
          LOG_RETURN_ERROR("reading longitude", "DeterminePixelSize", false);          
       }
 
