@@ -1008,8 +1008,6 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
       center = geoloc->lon_buf[center_loc];
       centerp1 = geoloc->lon_buf[center_loc + 1];
       
-      printf("center longitude: %f\n", center);
-
       /* Close geolocation file */
       if (!CloseGeoloc(geoloc))
         LOG_RETURN_ERROR("closing geolocation file", "DeterminePixelSize",
