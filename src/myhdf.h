@@ -95,4 +95,6 @@ bool DeterminePixelSize(char *geoloc_file_name, int num_input_sds,
 
 bool readData(hid_t dataset, int *start, int *count, void *buf);
 
+hid_t getNativeType(hid_t datatype);
+
 #endif
