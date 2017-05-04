@@ -68,6 +68,7 @@ typedef struct {
   Myhdf_dim_t dim[MYHDF_MAX_RANK];  /* information about each dimension */
   char *name;		 /* SDS name */
   hid_t typeh5;
+  size_t datasize;
 } Myhdf_sds_t;
 
 /* Structure to store information about the HDF attribute */

@@ -175,6 +175,7 @@ bool GetSDSInfoV(int32 sds_file_id, Myhdf_sds_t *sds) {
     sds->rank = rank;
     sds->type = datatype;
     sds->typeh5 = datatype;
+    sds->datasize = size;
     sds->nattr = 0;
    
     return true;
@@ -1167,7 +1168,13 @@ hid_t getNativeType(hid_t datatype) {
     sign      = H5Tget_sign(datatype);
 
     if (t_class == H5T_INTEGER) {
-        if (size == 2) {
+        if (size == 1) {
+            outtype = H5T_NATIVE_SCHAR;
+            if (sign == H5T_SGN_NONE) {
+                outtype = H5T_NATIVE_UCHAR;
+            }
+        }
+        else if (size == 2) {
             outtype = H5T_NATIVE_SHORT;
             if (sign == H5T_SGN_NONE) {
                 outtype = H5T_NATIVE_USHORT;
