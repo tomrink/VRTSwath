@@ -135,6 +135,8 @@ typedef struct {
     uint16 *val_uint16[NLINE_PATCH];
     int32 *val_int32[NLINE_PATCH];
     uint32 *val_uint32[NLINE_PATCH];
+    float32 *val_float32[NLINE_PATCH];
+    float64 *val_float64[NLINE_PATCH];
   } buf;
   Patches_loc_t **loc;  /* Array containing location of each patch */
   Patches_mem_t **mem;  /* Array containing pointer to patch in memory

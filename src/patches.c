@@ -310,6 +310,8 @@ Patches_t *SetupPatches(Img_coord_int_t *img_size, char *file_name,
   uint16 *val_uint16_p;
   int32 *val_int32_p;
   uint32 *val_uint32_p;
+  float32 *val_float32_p;
+  float64 *val_float64_p;
 
   char *error_string = (char *)NULL;
 
@@ -446,7 +448,27 @@ Patches_t *SetupPatches(Img_coord_int_t *img_size, char *file_name,
         val_int32_p += NSAMPLE_PATCH;
       }
       break;
-    default:
+    case DFNT_FLOAT32:
+      this->data_type_size = sizeof(float32);
+      val_float32_p = (float32 *)calloc(n, this->data_type_size);
+      if (val_float32_p == (float32 *)NULL)
+        error_string = "allocating patches i/o buffer";
+      for (il = 0; il < NLINE_PATCH; il++) {
+        this->buf.val_float32[il] = val_float32_p;
+        val_float32_p += NSAMPLE_PATCH;
+      }
+      break;
+    case DFNT_FLOAT64:
+      this->data_type_size = sizeof(float64);
+      val_float64_p = (float64 *)calloc(n, this->data_type_size);
+      if (val_float64_p == (float64 *)NULL)
+        error_string = "allocating patches i/o buffer";
+      for (il = 0; il < NLINE_PATCH; il++) {
+        this->buf.val_float64[il] = val_float64_p;
+        val_float64_p += NSAMPLE_PATCH;
+      }
+      break;            
+      default:
       error_string = "invalid data type";
   }
 
