@@ -174,9 +174,6 @@ Scan_t *SetupScan(Geoloc_t *geoloc, Input_t *input, Kernel_t *kernel)
   this->size.s = input->scan_size.s + 
                  this->extra_before.s + this->extra_after.s;
   
-  printf("Setup Scan: %d, %d\n", this->size.l, this->size.s);
-  printf("Setup Scan: %f, %f\n", this->band_offset.l, this->band_offset.s);
-
   if (geoloc->geoloc_type == GRID_GEOLOC) 
     this->isin_type = geoloc->space_def.isin_type;
   else
@@ -1045,71 +1042,120 @@ bool GetScanInput(Scan_t *this, Input_t *input, int il, int nl)
   for (il_r = 0; il_r < nl; il_r++) {
 
     start[input->dim.l] = il++; 
-
      
-    if (!readData(input->sds.id, start, nval, input->buf.val_uint16)) {
-       LOG_RETURN_ERROR("reading input", "GetScanInput", false);
-    }
-
     scan_buf_p = this->buf[il_r + this->extra_before.l];
     scan_buf_p += this->extra_before.s;
 
     switch (input->sds.type) {
       case DFNT_CHAR8:
+        if (!readData(input->sds.id, start, nval, input->buf.val_uint8)) {
+           LOG_RETURN_ERROR("reading input", "GetScanInput", false);
+        }
         for (is = 0; is < input->scan_size.s; is++) {
           scan_buf_p->v = (double)input->buf.val_char8[is];
+          setIsFill(input, scan_buf_p->v, scan_buf_p);
           scan_buf_p++;
         }
         break;
       case DFNT_UINT8:
+        if (!readData(input->sds.id, start, nval, input->buf.val_uint8)) {
+           LOG_RETURN_ERROR("reading input", "GetScanInput", false);
+        }
         for (is = 0; is < input->scan_size.s; is++) {
           scan_buf_p->v = (double)input->buf.val_uint8[is];
+          setIsFill(input, scan_buf_p->v, scan_buf_p);
           scan_buf_p++;
         }
         break;
       case DFNT_INT8:
+        if (!readData(input->sds.id, start, nval, input->buf.val_int8)) {
+           LOG_RETURN_ERROR("reading input", "GetScanInput", false);
+        }
         for (is = 0; is < input->scan_size.s; is++) {
           scan_buf_p->v = (double)input->buf.val_int8[is];
+          setIsFill(input, scan_buf_p->v, scan_buf_p);
           scan_buf_p++;
         }
         break;
       case DFNT_INT16:
+        if (!readData(input->sds.id, start, nval, input->buf.val_int16)) {
+           LOG_RETURN_ERROR("reading input", "GetScanInput", false);
+        }
         for (is = 0; is < input->scan_size.s; is++) {
           scan_buf_p->v = (double)input->buf.val_int16[is];
+          setIsFill(input, scan_buf_p->v, scan_buf_p);
           scan_buf_p++;
         }
         break;
       case DFNT_UINT16:
+        if (!readData(input->sds.id, start, nval, input->buf.val_uint16)) {
+           LOG_RETURN_ERROR("reading input", "GetScanInput", false);
+        }          
         for (is = 0; is < input->scan_size.s; is++) {
-            int bufval = input->buf.val_uint16[is];
-            dval = (double) bufval;
-            if (bufval > 65527) {
-                dval = (double)  65535;
-                scan_buf_p->img.is_fill = true;
-            }
-          scan_buf_p->v = dval;
-          scan_buf_p++;
+            scan_buf_p->v = (double) input->buf.val_uint16[is];
+            setIsFill(input, scan_buf_p->v, scan_buf_p);
+            scan_buf_p++;
         }
         break;
       case DFNT_INT32:
+        if (!readData(input->sds.id, start, nval, input->buf.val_int32)) {
+           LOG_RETURN_ERROR("reading input", "GetScanInput", false);
+        }
         for (is = 0; is < input->scan_size.s; is++) {
           scan_buf_p->v = (double)input->buf.val_int32[is];
+          setIsFill(input, scan_buf_p->v, scan_buf_p);
           scan_buf_p++;
         }
         break;
       case DFNT_UINT32:
+        if (!readData(input->sds.id, start, nval, input->buf.val_uint32)) {
+           LOG_RETURN_ERROR("reading input", "GetScanInput", false);
+        }
         for (is = 0; is < input->scan_size.s; is++) {
           scan_buf_p->v = (double)input->buf.val_uint32[is];
+          setIsFill(input, scan_buf_p->v, scan_buf_p);
           scan_buf_p++;
         }
         break;
-      default:
+      case DFNT_FLOAT32:
+        if (!readData(input->sds.id, start, nval, input->buf.val_float32)) {
+           LOG_RETURN_ERROR("reading input", "GetScanInput", false);
+        }
+        for (is = 0; is < input->scan_size.s; is++) {
+          scan_buf_p->v = (double)input->buf.val_float32[is];
+          setIsFill(input, scan_buf_p->v, scan_buf_p);
+          scan_buf_p++;
+        }
+        break;
+      case DFNT_FLOAT64:
+        if (!readData(input->sds.id, start, nval, input->buf.val_double)) {
+           LOG_RETURN_ERROR("reading input", "GetScanInput", false);
+        }
+        for (is = 0; is < input->scan_size.s; is++) {
+          scan_buf_p->v = input->buf.val_double[is];
+          setIsFill(input, scan_buf_p->v, scan_buf_p);
+          scan_buf_p++;
+        }
+        break;
+        default:
         LOG_RETURN_ERROR("invalid data type", "GetScanInput", false);
     }
 
   }
 
   return true;
+}
+
+void setIsFill(Input_t *input, double value, Scan_buf_t *scan_buf_p) {
+    scan_buf_p->img.is_fill = false;
+    if (input->hasValidRange) {
+        if (!(value >= input->valid_min && value <= input->valid_max)) {
+            scan_buf_p->img.is_fill = true;
+        }
+    }
+    else if (value == input->fill_value) {
+        scan_buf_p->img.is_fill = true;
+    }
 }
 
 /* Constant for PointInTriangle */
