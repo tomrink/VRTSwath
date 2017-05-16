@@ -79,7 +79,10 @@
 #include "resamp.h"
 
 /* Constants */
-#define FILL_ATTR_NAME "_FillValue"
+#define FILL_VALUE_NAME "_FillValue"
+#define VALID_MIN_NAME "valid_min"
+#define VALID_MAX_NAME "valid_max"
+
 
 Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int iband, int rank,
                    int *dim, char *errstr)
@@ -205,7 +208,6 @@ Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int ib
     strcpy (errstr, "OpenInput: getting sds info");
     return (Input_t *)NULL;
   }
-  printf("GetSDInfoV done\n");
 
   /* Get dimensions */
 
@@ -219,7 +221,6 @@ Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int ib
       return (Input_t *)NULL;
     }
   }
-  printf("GetSDSDimInfoV done\n");
 
   /* Check the rank and dimensions */
 
@@ -238,7 +239,6 @@ Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int ib
         "sample dimensions", tmperrstr);
       return (Input_t *)NULL;
     }
-    printf("FindInputDimV done\n");
   }
 
   /* Check the line and sample dimensions */
@@ -247,24 +247,27 @@ Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int ib
     this->size.l = this->sds.dim[this->dim.l].nval;
     this->size.s = this->sds.dim[this->dim.s].nval;
     this->ires = 1; // always 
-    printf("size.l: %d, size.s: %d\n", this->size.l, this->size.s);
   }
 
-  /* Get fill value or use 0.0 as the fill */
-
-  if (error_string == (char *)NULL) {
-    attr.name = FILL_ATTR_NAME;
-/* TDR
-    if (!GetAttrDouble(this->sds.id, &attr, fill)) {
-      this->fill_value = (int) 0.0;
-    }
-    else {
-      this->fill_value = (int) fill[0];
-    }
-*/
-    this->fill_value = (int) 65535;  // TDR, force all missing flags in scan to this for now.
+  /* Check for valid range */
+  
+  double attrVal[1];
+  this->hasValidRange = false;
+  if (GetSingleValueAttrAsDouble(this->sds.id, VALID_MIN_NAME, attrVal)) {
+      this->valid_min = attrVal[0];
+  
+      if (GetSingleValueAttrAsDouble(this->sds.id, VALID_MAX_NAME, attrVal)) {
+          this->valid_max = attrVal[0];
+          this->hasValidRange = true;
+      }
   }
   
+  /* Get fill value or use 0.0 as the fill */
+  this->fill_value = 0.0;
+  if (GetSingleValueAttrAsDouble(this->sds.id, FILL_VALUE_NAME, attrVal)) {
+      this->fill_value = attrVal[0];
+  }
+
 
   /* Calculate number of scans, and for swath space, check for 
      an integral number of scans */
@@ -284,83 +287,51 @@ Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int ib
 
   /* Allocate input buffer */
   
-  /*TDR, need to figure out HDF5 types*/
-  this->sds.type = DFNT_UINT16;
-  this->data_type_size = sizeof(uint16);
-  this->buf.val_uint16 = (uint16 *)calloc(this->size.s, 
-                                       this->data_type_size);
-  if (this->buf.val_uint16 == (uint16 *)NULL) 
+  hid_t type = getNativeType(this->sds.typeh5);
+  if (type == NULL) {
+      return NULL;
+  }
+  
+  this->data_type_size = sizeof(this->sds.datasize);
+  void *buf = (void *) calloc(this->size.s, this->data_type_size);
+  if (buf == NULL) {
       error_string = "allocating input i/o buffer";
+      return NULL;
+  }
+  
+  if (type == H5T_NATIVE_SCHAR) {
+      this->sds.type = DFNT_INT8;
+      this->buf.val_int8 = (int8 *) buf;
+  }
+  else if (type == H5T_NATIVE_UCHAR) {
+      this->sds.type = DFNT_UINT8;
+      this->buf.val_uint8 = (uint8 *) buf;
+  }
+  else if (type == H5T_NATIVE_USHORT) {
+      this->sds.type = DFNT_UINT16;
+      this->buf.val_uint16 = (uint16 *) buf;
+  }
+  else if (type == H5T_NATIVE_SHORT) {
+      this->sds.type = DFNT_INT16;
+      this->buf.val_int16 = (int16 *) buf;
+  }
+  else if (type == H5T_NATIVE_UINT) {
+      this->sds.type = DFNT_UINT32;
+      this->buf.val_uint32 = (uint32 *) buf;
+  }
+  else if (type == H5T_NATIVE_INT) {
+      this->sds.type = DFNT_INT32;
+      this->buf.val_int32 = (int32 *) buf;
+  }
+  else if (type == H5T_NATIVE_FLOAT) {
+      this->sds.type = DFNT_FLOAT32;
+      this->buf.val_float32 = (float32 *) buf;
+  }
+  else if (type == H5T_NATIVE_DOUBLE) {
+      this->sds.type = DFNT_FLOAT64;
+      this->buf.val_double = (float64 *) buf;
+  }
     
- /* 
-  switch (this->sds.type) {
-    case DFNT_CHAR8:
-      this->data_type_size = sizeof(char8);
-      this->buf.val_char8 = (char8 *)calloc(this->size.s, 
-                                     this->data_type_size);
-      if (this->buf.val_char8 == (char8 *)NULL) 
-        error_string = "allocating input i/o buffer";
-      break;
-    case DFNT_UINT8:
-      this->data_type_size = sizeof(uint8);
-      this->buf.val_uint8 = (uint8 *)calloc(this->size.s, 
-                                     this->data_type_size);
-      if (this->buf.val_uint8 == (uint8 *)NULL) 
-        error_string = "allocating input i/o buffer";
-      break;
-    case DFNT_INT8:
-      this->data_type_size = sizeof(int8);
-      this->buf.val_int8 = (int8 *)calloc(this->size.s, 
-                                    this->data_type_size);
-      if (this->buf.val_int8 == (int8 *)NULL) 
-        error_string = "allocating input i/o buffer";
-      break;
-    case DFNT_INT16:
-      this->data_type_size = sizeof(int16);
-      this->buf.val_int16 = (int16 *)calloc(this->size.s, 
-                                     this->data_type_size);
-      if (this->buf.val_int16 == (int16 *)NULL) 
-        error_string = "allocating input i/o buffer";
-      break;
-    case DFNT_UINT16:
-      this->data_type_size = sizeof(uint16);
-      this->buf.val_uint16 = (uint16 *)calloc(this->size.s, 
-                                       this->data_type_size);
-      if (this->buf.val_uint16 == (uint16 *)NULL) 
-        error_string = "allocating input i/o buffer";
-      break;
-    case DFNT_INT32:
-      this->data_type_size = sizeof(int32);
-      this->buf.val_int32 = (int32 *)calloc(this->size.s,
-                                            this->data_type_size);
-      if (this->buf.val_int32 == (int32 *)NULL)
-        error_string = "allocating input i/o buffer";
-      break;
-    case DFNT_UINT32:
-      this->data_type_size = sizeof(uint32);
-      this->buf.val_uint32 = (uint32 *)calloc(this->size.s,
-                                              this->data_type_size);
-      if (this->buf.val_uint32 == (uint32 *)NULL)
-        error_string = "allocating input i/o buffer";
-      break;
-    default:
-      error_string = "unsupported data type";
-  }
-  */
-
-/*
-  if (error_string != (char *)NULL) {
-      printf("Error:   %s\n", error_string);
-    for (ir = 0; ir < this->sds.rank; ir++)
-      free(this->sds.dim[ir].name);
-    free(this->sds.name);
-    free(this->file_name);
-    free(this);
-    sprintf (errstr, "OpenInput: %s", error_string);
-    return (Input_t *)NULL;
-  }
-*/
-
   return this;
 }
 
