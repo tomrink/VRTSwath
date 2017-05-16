@@ -74,10 +74,15 @@ typedef struct {
     int16 *val_int16;
     uint16 *val_uint16;    
     int32 *val_int32;
-    uint32 *val_uint32;    
+    uint32 *val_uint32;
+    float32 *val_float32; 
+    float64  *val_double;
   } buf;  
-  int fill_value;       /* Fill value for the current SDS (even floats will
+  double fill_value;       /* Fill value for the current SDS (even floats will
                            be an "int" value) */
+  double valid_min;
+  double valid_max;
+  bool hasValidRange;
 } Input_t;
 
 /* Prototypes */
