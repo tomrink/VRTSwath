@@ -154,23 +154,16 @@ bool GetSDSInfoV(int32 sds_file_id, Myhdf_sds_t *sds) {
      * Get datatype and dataspace handles and then query
      * dataset class, order, size, rank and dimensions.
      */
-    printf("GetSDSInfoV: %s **********\n",sds->name);
-    datatype  = H5Dget_type(datasetHandle);     /* datatype handle */
-    printf("datatype: %d\n", datatype);
+    datatype  = H5Dget_type(datasetHandle); /* datatype handle */
     t_class     = H5Tget_class(datatype);
-    if (t_class == H5T_INTEGER) printf("Data set has INTEGER type \n");
     order     = H5Tget_order(datatype);
-    if (order == H5T_ORDER_LE) printf("Little endian order \n");
 
     size  = H5Tget_size(datatype);
-    printf(" Data size is %d \n", (int)size);
 
-    dataspace = H5Dget_space(datasetHandle);    /* dataspace handle */
+    dataspace = H5Dget_space(datasetHandle); /* dataspace handle */
     int32 rank      = H5Sget_simple_extent_ndims(dataspace);
     long *datasetDimensions = (long *) calloc(rank, sizeof(long));
     status_n  = H5Sget_simple_extent_dims(dataspace, datasetDimensions, NULL);
-    printf("rank %d, dimensions %lu x %lu \n", rank,
-	   (unsigned long)(datasetDimensions[0]), (unsigned long)(datasetDimensions[1]));  
 
     sds->rank = rank;
     sds->type = datatype;
@@ -233,8 +226,6 @@ bool GetSDSDimInfoV(int32 sds_id, Myhdf_dim_t *dim, int irank) {
     int32 rank      = H5Sget_simple_extent_ndims(dataspace);
     long *datasetDimensions = (long *) calloc(rank, sizeof(long));
     status_n  = H5Sget_simple_extent_dims(dataspace, datasetDimensions, NULL);
-    printf("idx:  %d, rank %d, dimensions %lu x %lu \n", irank, rank,
-	   (unsigned long)(datasetDimensions[0]), (unsigned long)(datasetDimensions[1]));
 
     dim->nval = datasetDimensions[irank];
     dim->name = DupString("dim name unspecified");
@@ -458,6 +449,71 @@ bool GetAttrDouble(int32 sds_id, Myhdf_attr_t *attr, double *val)
   }
 
   return true;
+}
+
+bool GetSingleValueAttrAsDouble(hid_t dataset, char *attrName, double *dblVal) {
+    hid_t attr, attrType, nativeType;
+    herr_t status;
+    
+    unsigned int uintValue;
+    int intValue;
+    unsigned short ushortValue;
+    short shortValue;
+    float floatValue;
+    double doubleValue;
+    
+    attr = H5Aopen(dataset, attrName, H5P_DEFAULT);
+    attrType = H5Aget_type (attr);
+    nativeType = getNativeType(attrType);
+    if (nativeType == NULL) {
+        LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
+    }
+    
+    if (nativeType == H5T_NATIVE_UINT) {
+        status = H5Aread(attr, nativeType, &uintValue);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
+        }
+        dblVal[0] = (double) uintValue;
+    }
+    else if (nativeType == H5T_NATIVE_INT) {
+        status = H5Aread(attr, nativeType, &intValue);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
+        }
+        dblVal[0] = (double) intValue;        
+    }
+    else if (nativeType == H5T_NATIVE_USHORT) {
+        status = H5Aread(attr, nativeType, &ushortValue);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
+        }
+        dblVal[0] = (double) ushortValue;
+    }
+    else if (nativeType == H5T_NATIVE_SHORT) {
+        status = H5Aread(attr, nativeType, &shortValue);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
+        }
+        dblVal[0] = (double) shortValue;
+    }    
+    else if (nativeType == H5T_NATIVE_FLOAT) {
+        status = H5Aread(attr, nativeType, &floatValue);
+        if (status < 0) {
+             LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);           
+        }
+        dblVal[0] = (double) floatValue;
+    }
+    else if (nativeType == H5T_NATIVE_DOUBLE) {
+        status = H5Aread(attr, nativeType, &doubleValue);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);            
+        }
+        dblVal[0] = doubleValue;
+    }
+                
+
+    return true;
 }
 
 /*
@@ -1193,7 +1249,7 @@ hid_t getNativeType(hid_t datatype) {
             }            
         }
         else {
-            sprintf(msg, "can only handle INTEGER sizes of 2, 4, 8, not: %d \n", size);
+            sprintf(msg, "can only handle INTEGER sizes of 1, 2, 4, 8, not: %d \n", size);
             LogInfomsg(msg);
             return NULL;            
         }
