@@ -52,6 +52,9 @@
  Plus corrected nearest neighbor so it selects the nearest input pixel 
  rather than sum and average a number of input pixels.
 
+ Revision 2017/05/15
+ Patches O'Houlihan
+
  
 !Team Unique Header:
   This software was developed by the MODIS Land Science Team Support 
@@ -265,7 +268,7 @@ bool CreatePatches(Patches_t *this)
 
 
 Patches_t *SetupPatches(Img_coord_int_t *img_size, char *file_name,
-                        int32 input_data_type, int input_fill_value)
+                        int32 input_data_type, double input_fill_value)
 /* 
 !C******************************************************************************
 
@@ -348,7 +351,7 @@ Patches_t *SetupPatches(Img_coord_int_t *img_size, char *file_name,
   this->nused = 0;
   this->nnull = 0;
   this->data_type = input_data_type;
-  this->fill_value = (float) input_fill_value;
+  this->fill_value = input_fill_value;
 #ifdef DEBUG_ZEROS
   this->fill_value = -1.0;
 #endif
