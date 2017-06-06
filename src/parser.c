@@ -592,14 +592,10 @@ bool ReadParamFile(FILE *file, Param_t *this)
   char *error_string;
   char msg[M_MSG_LEN+1];
 
-  printf("debug 1\n");
-
   tmp_arr = (char **)Calloc2D(MAX_NUM_PARAM, MAX_OPTION_VAL_LEN, sizeof(char));
   if (tmp_arr == (char **)NULL) 
     LOG_RETURN_ERROR("cannot allocate memory for tmp_arr", "ReadParamFile",
                      false);
-
-  printf("debug 2\n");
 
   st = true;
   error_string = (char *)NULL;
@@ -825,7 +821,39 @@ bool ReadParamFile(FILE *file, Param_t *this)
         break;
       }
     }
-
+    else if ((strcmp(arg_id, "UBF") == 0)  ||
+             (strcmp(arg_id, "USER_BACKGROUND_FILL") == 0)) {
+      if (arg_val == (char *)NULL) {
+          error_string = "null user background fill";
+          break;
+      } else {
+        sprintf(s, "%s=%s", arg_id, arg_val);
+        GetArgValArray(s, tmp_arr, &n);
+        if (n > 1) {
+          sprintf(msg, "resamp: (warning) only the first %d pixel sizes "
+                       "will be used (out of %d supplied by the user), "
+                       "since %d is the maximum number of SDSs allowed "
+                       "in an HDF file. \n", MAX_SDS_DIMS, n, MAX_SDS_DIMS);
+	  LogInfomsg(msg);
+          n = 1;
+        }
+      }
+      loc_st = true;
+      for (ip = 0; ip < n; ip++) {
+        if (sscanf(tmp_arr[ip], "%lg",
+            &this->user_background_fill) != 1) {
+          sprintf(msg, "resamp: invalid fill value "
+                       "value ([%d]=%s).\n", ip, tmp_arr[ip]);
+	       LogInfomsg(msg);
+          loc_st = false;
+        }
+      }
+      if (!loc_st) {
+        error_string = "invalid pixel size parameters";
+        break;
+      }
+      this->has_user_background_fill = true;
+    }
     else if ((strcmp(arg_id, "OUL") == 0)  ||
              ((len_arg_id >= 30)  &&
               (strncmp(arg_id, "OUTPUT_SPACE_UPPER_LEFT_CORNER", 30) == 0))) {
@@ -2016,8 +2044,6 @@ bool update_sds_info(int sdsnum, Param_t *this)
   char n_str[5];
   int p1, p2, len, ir;
   char temp_string[20];
-  printf("TESTING %s \n", this->input_sds_name);
-  printf("%d, %d",this->dim[0][0], this->dim[0][1]);
 
   this->rank[sdsnum] = 2;
 /*
@@ -2039,7 +2065,6 @@ bool update_sds_info(int sdsnum, Param_t *this)
     this->input_sds_name[p1] = '\0';
   }
 */
-  printf("TESTING %s \n", this->input_sds_name);
 
 /*
   len = (int)strlen(this->input_sds_name) + ((this->rank[sdsnum] - 2) * 10);
@@ -2052,7 +2077,6 @@ bool update_sds_info(int sdsnum, Param_t *this)
   this->output_sds_name = (char *)calloc((len+1), sizeof(char));
   this->output_sds_name[len] = '\0';
   strcpy(this->output_sds_name, this->input_sds_name);
-  printf("TESTING: %s\n",this->output_sds_name);
 
 /*
   for (ir = 2; ir < this->rank[sdsnum]; ir++) {

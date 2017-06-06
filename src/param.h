@@ -142,6 +142,9 @@ typedef struct {
                                          degrees for GEO) one for each SDS */
   Img_coord_int_t output_img_size[MAX_SDS_DIMS]; /* Output image size
                                          (lines, samples) one for each SDS */
+  double user_background_fill;
+  bool has_user_background_fill;
+  
 } Param_t;
 
 /* Prototypes */

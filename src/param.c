@@ -246,6 +246,7 @@ Param_t *GetParam(int argc, const char **argv)
   this->output_space_def.sphere = 8;
   this->output_space_def.isin_type = SPACE_NOT_ISIN;
   this->output_spatial_subset_type = LAT_LONG;
+  this->has_user_background_fill = false;
 
   /* Input space is not really used, since the MRTSwath will not
      work with Grids (only swath) */
@@ -662,6 +663,9 @@ Param_t *CopyParam(Param_t *param)
   this->output_spatial_subset_type = param->output_spatial_subset_type;
   this->output_data_type = param->output_data_type;
   this->patches_file_name = strdup(param->patches_file_name);
+  
+  this->has_user_background_fill = param->has_user_background_fill;
+  this->user_background_fill = param->user_background_fill;
 
   return this;
 }
