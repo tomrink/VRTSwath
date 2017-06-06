@@ -41,7 +41,7 @@ char templogname[50];			/* temporary log file name */
 static bool loginitialized = false;	/* init flag */
 
 /* Create a global variable for the log filename. */
-static char LOG_FILENAME[256] = "mrtswath.log";
+static char LOG_FILENAME[256] = "vrtswath.log";
 
 /******************************************************************************
 
