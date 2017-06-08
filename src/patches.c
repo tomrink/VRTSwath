@@ -1434,6 +1434,10 @@ bool TossPatches(Patches_t *this, int32 output_data_type)
           }
         }
         break;
+        case DFNT_FLOAT32:
+        break;
+        case DFNT_FLOAT64:
+        break;            
       default:
         LOG_RETURN_ERROR("invalid data type", "TossPatches", false);
     }
@@ -1552,6 +1556,8 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
     uint16 *val_uint16[NLINE_PATCH];    
     int32 *val_int32[NLINE_PATCH];
     uint32 *val_uint32[NLINE_PATCH];
+    float32 *val_float32[NLINE_PATCH];
+    float64 *val_float64[NLINE_PATCH];
   } buf;
   size_t n;
   char8 *val_char8_p;
@@ -1561,6 +1567,8 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
   uint16 *val_uint16_p;
   int32 *val_int32_p;
   uint32 *val_uint32_p;
+  float32 *val_float32_p;
+  float64 *val_float64_p;
   char8 fill_char8 = 0;
   uint8 fill_uint8 = 0;
   int8 fill_int8 = 0;
@@ -1742,6 +1750,26 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
         val_uint32_p += output->size.s;
       }
       break;
+    case DFNT_FLOAT32:
+        val_float32_p = (float32 *) calloc(n, sizeof(float32));
+        if (val_float32_p == (float32 *)NULL)
+                    LOG_RETURN_ERROR("allocating output product i/o buffer",
+                     "UnscramblePatches", false);
+        for (il = 0; il < NLINE_PATCH; il++) {
+            buf.val_float32[il] = val_float32_p;
+            val_float32_p += output->size.s;
+        }
+      break;
+    case DFNT_FLOAT64:
+        val_float64_p = (float64 *) calloc(n, sizeof(float64));
+        if (val_float64_p == (float64 *)NULL)
+                    LOG_RETURN_ERROR("allocating output product i/o buffer",
+                     "UnscramblePatches", false);
+        for (il = 0; il < NLINE_PATCH; il++) {
+            buf.val_float64[il] = val_float64_p;
+            val_float64_p += output->size.s;
+        }
+      break;        
     default:
       LOG_RETURN_ERROR("invalid data type (a)", "UnscramblePatches", false);
   }
@@ -2105,6 +2133,106 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
               il_rel++;
             }
             break;
+          case DFNT_FLOAT32:
+            il_rel = 0;
+            for (il = il1; il < il2; il++)
+            {
+              is_rel = 0;
+              for (is = is1; is < is2; is++)
+              {
+                switch (this->data_type)
+                {
+                  case DFNT_CHAR8:
+                    buf.val_float32[il_rel][is] =
+                      this->buf.val_char8[il_rel][is_rel++];
+                    break;
+                  case DFNT_UINT8:
+                    buf.val_float32[il_rel][is] =
+                      this->buf.val_uint8[il_rel][is_rel++];
+                    break;
+                  case DFNT_INT8:
+                    buf.val_float32[il_rel][is] =
+                      this->buf.val_int8[il_rel][is_rel++];
+                    break;
+                  case DFNT_UINT16:
+                    buf.val_float32[il_rel][is] =
+                      this->buf.val_uint16[il_rel][is_rel++];
+                    break;
+                  case DFNT_INT16:
+                    buf.val_float32[il_rel][is] =
+                      this->buf.val_int16[il_rel][is_rel++];
+                    break;
+                  case DFNT_UINT32:
+                    buf.val_float32[il_rel][is] =
+                      this->buf.val_uint32[il_rel][is_rel++];
+                    break;
+                  case DFNT_INT32:
+                    buf.val_float32[il_rel][is] =
+                      this->buf.val_int32[il_rel][is_rel++];
+                    break;
+                  case DFNT_FLOAT32:
+                    buf.val_float32[il_rel][is] =
+                      this->buf.val_float32[il_rel][is_rel++];
+                    break;
+                  case DFNT_FLOAT64:
+                    buf.val_float32[il_rel][is] =
+                      (float32) this->buf.val_float64[il_rel][is_rel++];
+                    break;                    
+                }
+              }
+              il_rel++;
+            }
+            break; 
+          case DFNT_FLOAT64:
+            il_rel = 0;
+            for (il = il1; il < il2; il++)
+            {
+              is_rel = 0;
+              for (is = is1; is < is2; is++)
+              {
+                switch (this->data_type)
+                {
+                  case DFNT_CHAR8:
+                    buf.val_float64[il_rel][is] =
+                      this->buf.val_char8[il_rel][is_rel++];
+                    break;
+                  case DFNT_UINT8:
+                    buf.val_float64[il_rel][is] =
+                      this->buf.val_uint8[il_rel][is_rel++];
+                    break;
+                  case DFNT_INT8:
+                    buf.val_float64[il_rel][is] =
+                      this->buf.val_int8[il_rel][is_rel++];
+                    break;
+                  case DFNT_UINT16:
+                    buf.val_float64[il_rel][is] =
+                      this->buf.val_uint16[il_rel][is_rel++];
+                    break;
+                  case DFNT_INT16:
+                    buf.val_float64[il_rel][is] =
+                      this->buf.val_int16[il_rel][is_rel++];
+                    break;
+                  case DFNT_UINT32:
+                    buf.val_float64[il_rel][is] =
+                      this->buf.val_uint32[il_rel][is_rel++];
+                    break;
+                  case DFNT_INT32:
+                    buf.val_float64[il_rel][is] =
+                      this->buf.val_int32[il_rel][is_rel++];
+                    break;
+                  case DFNT_FLOAT32:
+                    buf.val_float64[il_rel][is] =
+                      this->buf.val_float32[il_rel][is_rel++];
+                    break;
+                  case DFNT_FLOAT64:
+                    buf.val_float64[il_rel][is] =
+                      this->buf.val_float64[il_rel][is_rel++];
+                    break;                    
+                }
+              }
+              il_rel++;
+            }
+            break;                        
           default:
             free(buf.val_void[0]);
             LOG_RETURN_ERROR("invalid data type (b)","UnscramblePatches",false);
@@ -2171,6 +2299,22 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
               il_rel++;
             }
             break;
+          case DFNT_FLOAT32:
+            il_rel = 0;
+            for (il = il1; il < il2; il++) {
+              for (is = is1; is < is2; is++)
+                buf.val_float32[il_rel][is] = (float32) this->fill_value;
+              il_rel++;
+            }
+            break;
+           case DFNT_FLOAT64:
+            il_rel = 0;
+            for (il = il1; il < il2; il++) {
+              for (is = is1; is < is2; is++)
+                buf.val_float64[il_rel][is] = this->fill_value;
+              il_rel++;
+            }
+            break;                       
           default:
             free(buf.val_void[0]);
             LOG_RETURN_ERROR("invalid data type (c)","UnscramblePatches",false);
@@ -2183,15 +2327,18 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
        the NN resampling process.  We want to use a quick, brute-force method
        to fill those values in the output image. */
 
-    if(kernel_type == NN)
-    {
+    // TDR, CC and BI seem to also leave holes. TODO: investigate.
+    //if(kernel_type == NN) 
+    //{
+/*
       if (!FillOutput(buf.val_void, NLINE_PATCH, output->size.s,
           output_data_type, this->fill_value, slope, same_data_type))
       {
         LOG_RETURN_ERROR("filling gaps in output file", "UnscramblePatches",
           false);
       }
-    }
+*/
+    //}
 
     /* Write the lines to disk */
 
