@@ -315,19 +315,16 @@ int main (int argc, const char **argv)
         LOG_WARNING("not processing SDS/band", "main");
         break;
       }
-      printf("OpenInputV done\n");
 
       /* Setup kernel */
       kernel = GenKernel(param->kernel_type);
       if (kernel == (Kernel_t *)NULL)
         LOG_ERROR("generating kernel", "main");
-      printf("GetKernal done\n");
 
       /* Open geoloc file */
       geoloc = OpenGeolocSwath(param->geoloc_file_name);
       if (geoloc == (Geoloc_t *)NULL)
         LOG_ERROR("bad geolocation file", "main");
-      printf("OpenGeolocSwathV done\n");
 
       /* Setup input scan */
       scan = SetupScan(geoloc, input, kernel);
