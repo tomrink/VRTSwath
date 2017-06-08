@@ -1435,8 +1435,20 @@ bool TossPatches(Patches_t *this, int32 output_data_type)
         }
         break;
         case DFNT_FLOAT32:
+         for (il = 0; il < NLINE_PATCH; il++) {
+          for (is = 0; is < NSAMPLE_PATCH; is++) {
+            w = mem_p->weight[il][is];
+            this->buf.val_float32[il][is] = (w > MIN_WEIGHT) ? (float32) mem_p->sum[il][is] / w : (float32) this->fill_value;
+          }
+        }           
         break;
         case DFNT_FLOAT64:
+         for (il = 0; il < NLINE_PATCH; il++) {
+          for (is = 0; is < NSAMPLE_PATCH; is++) {
+            w = mem_p->weight[il][is];
+            this->buf.val_float64[il][is] = (w > MIN_WEIGHT) ? mem_p->sum[il][is] / w : this->fill_value;
+          }
+        }                       
         break;            
       default:
         LOG_RETURN_ERROR("invalid data type", "TossPatches", false);
