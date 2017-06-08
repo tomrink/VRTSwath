@@ -888,6 +888,11 @@ void PrintParam
     sprintf(msg, "resampling_type:         %s\n",
             ResamplingTypeStrings[param->kernel_type]);
     LogInfomsg(msg);
+    
+    if (param->has_user_background_fill) {
+        sprintf(msg, "user background fill:    %f\n", param->user_background_fill);
+        LogInfomsg(msg);
+    }    
 
     strcpy(msg, "output projection parameters: ");
     for (i = 0; i < 15; i++)
@@ -900,7 +905,7 @@ void PrintParam
         "\n\n     SDS name                      #bands in SDS    #bands "
         "to process\n");
     LogInfomsg(msg);
-
+    
     for (i = 0; i < param->num_input_sds; i++)
     {
         /* Determine how many bands in this SDS are to be processed */
