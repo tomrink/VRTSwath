@@ -159,7 +159,9 @@ Output_t *OutputFile(char *file_name, char *sds_name,
       output_data_type != DFNT_INT16  &&
       output_data_type != DFNT_UINT16 &&
       output_data_type != DFNT_INT32  &&
-      output_data_type != DFNT_UINT32)
+      output_data_type != DFNT_UINT32 &&
+      output_data_type != DFNT_FLOAT32 &&
+      output_data_type != DFNT_FLOAT64)
     LOG_RETURN_ERROR("output data type not supported", "OpenOutput", 
                  (Output_t *)NULL);
 
