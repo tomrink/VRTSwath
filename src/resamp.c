@@ -681,8 +681,6 @@ int main (int argc, const char **argv)
       if (param->output_file_format == HDF_FMT ||
           param->output_file_format == BOTH)
       {
-        if (!CloseOutput(output))
-          LOG_ERROR("closing output file", "main");
 
         /* If not appending, write metadata to output HDF file */
         if (file_created)
@@ -690,6 +688,8 @@ int main (int argc, const char **argv)
           if (!WriteMeta(output->file_name, &param->output_space_def)) 
             LOG_ERROR("writing metadata", "main");
         }
+        if (!CloseOutput(output))
+          LOG_ERROR("closing output file", "main");
       }
 
       /* Close output GeoTiff file */
