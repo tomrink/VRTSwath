@@ -420,38 +420,6 @@ bool FindInputDimV(int rank, int *param_dim, Myhdf_dim_t *sds_dim,
   dim->l = 0;
   dim->s = 1;  
 
-  /**
-  ils = 0;
-  iextra = 2;
-
-  for (ir = 0; ir < rank; ir++) {
-    if (sds_dim[ir].nval > MIN_LS_DIM_SIZE) {
-      if (ils > 1) {
-        sprintf (errstr, "FindInputDim: too many large dimensions. Only "
-          "the line and sample dimensions can be larger than %d.",
-          MIN_LS_DIM_SIZE);
-        return false;
-      }
-      temp_dim[ir] = param_dim[ils];
-      extra_dim[ir] = 0;
-      if (temp_dim[ir] == -1) dim->l = ir;
-      else dim->s = ir;
-      ils++;
-
-    } else {
-      if (iextra >= MYHDF_MAX_RANK) {
-        sprintf (errstr, "FindInputDim: too many small dimensions. The "
-          "line and sample dimensions need to be larger than %d.",
-          MIN_LS_DIM_SIZE);
-        return false;
-      }
-      temp_dim[ir] = param_dim[iextra];
-      extra_dim[ir] = param_dim[iextra];
-      iextra++;
-    }
-  }
-   */
-
   /* Update the user parameters */
 
   for (ir = 0; ir < rank; ir++)
