@@ -262,10 +262,18 @@ Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int ib
       }
   }
   
+  if (this->hasValidRange) {
+      printf("Dataset valid range: %f, %f\n", this->valid_min, this->valid_max);
+  }
+  
   /* Get fill value or use 0.0 as the fill */
   this->fill_value = 0.0;
   if (GetSingleValueAttrAsDouble(this->sds.id, FILL_VALUE_NAME, attrVal)) {
       this->fill_value = attrVal[0];
+      printf("Dataset fill value:  %f\n", this->fill_value);
+  }
+  else {
+      printf("Using default fill value: %f\n", this->fill_value);
   }
 
 
