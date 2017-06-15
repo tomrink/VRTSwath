@@ -2041,9 +2041,7 @@ bool update_sds_info(int sdsnum, Param_t *this)
 !END****************************************************************************
 */
 {
-  char n_str[5];
-  int p1, p2, len, ir;
-  char temp_string[20];
+  int len;
 
   this->rank[sdsnum] = 2;
 /*
