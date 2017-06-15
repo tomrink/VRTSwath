@@ -65,10 +65,8 @@
 int ConvertCorners(Param_t *param)
 {
   int i;
-  int highest_ires;                        /* highest resolution of the SDSs */
   int ul_line, ul_samp, lr_line, lr_samp;  /* UL/LR line/sample values */
-  double deg_inc;
-  Map_coord_t ul, ur, ll, lr;
+  Map_coord_t ul, lr;
   double minx = FLT_MAX,
          maxx = -FLT_MAX,
          miny = FLT_MAX,
@@ -82,16 +80,11 @@ int ConvertCorners(Param_t *param)
   int32 start[2];
   int32 nval[2];
   
-  float32 ur_lon, ur_lat, ll_lon, ll_lat;
   
   Map_coord_t output_coord_UL;
   Map_coord_t output_coord_LR;
   Map_coord_t output_coord_MP;
   
-  Geo_coord_t geo_UL;
-  Geo_coord_t geo_LR;
-  Geo_coord_t geo_UR;
-  Geo_coord_t geo_LL;
   
   float *lon_side_a;
   float *lat_side_a;
