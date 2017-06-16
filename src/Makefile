@@ -3,7 +3,7 @@ CC = gcc
 CFLAGS = -O3 -Wall -W -Wno-switch -g
 #LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -lm -lsz -lz -ldl -lm -Wl,-rpath -Wl,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
 #LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -lm -lz -ldl -lm -Wl,-rpath -Wl,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
-LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -ldl -Wl,-rpath,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
+LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -ldl -lm -Wl,-rpath,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
 MV = mv
 CP = cp
 RM = rm -f
@@ -40,9 +40,7 @@ EXE = swath2grid
 #-----------------------------
 GEOLIB = ../lib/libgctp.a
 HDFLIB = ../lib/libhdfeos.a ../lib/libmfhdf.a ../lib/libdf.a ../lib/libjpeg.a ../lib/libz.a ../lib/libsz.a
-#HDF5LIB = -L../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5_hl.a ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5.a ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libsz.so.2.0.0 ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libz.so.1.2.5
-#HDF5LIB = ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5_hl.a ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5.a ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libsz.so.2.0.0 ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libz.so.1.2.5
-HDF5LIB = ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5_hl.a ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5.a
+HDF5LIB = -L../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5_hl.a ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5.a
 TIFFLIB = ../lib/libgeotiff.a ../lib/libtiff.a
 
 #-------------------------------------------------------------------
@@ -52,7 +50,7 @@ TIFFLIB = ../lib/libgeotiff.a ../lib/libtiff.a
 all: $(EXE)
 
 swath2grid: resamp.o $(OBJ) $(INC)
-	$(CC) -o swath2grid resamp.o $(OBJ) $(LDFLAGS) -lm
+	$(CC) -o swath2grid resamp.o $(OBJ) $(LDFLAGS)
 
 install:
 	$(MV) swath2grid dumpmeta hdf2hdr ../bin
