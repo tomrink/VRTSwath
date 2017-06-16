@@ -3,7 +3,7 @@ CC = gcc
 CFLAGS = -O3 -Wall -W -Wno-switch -g
 #LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -lm -lsz -lz -ldl -lm -Wl,-rpath -Wl,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
 #LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -lm -lz -ldl -lm -Wl,-rpath -Wl,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
-LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -ldl -lm -Wl,-rpath,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
+LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -lsz -lz -ldl -lm -Wl,-rpath,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
 MV = mv
 CP = cp
 RM = rm -f
@@ -39,7 +39,7 @@ EXE = swath2grid
 # Define the object libraries:
 #-----------------------------
 GEOLIB = ../lib/libgctp.a
-HDFLIB = ../lib/libhdfeos.a ../lib/libmfhdf.a ../lib/libdf.a ../lib/libjpeg.a ../lib/libz.a ../lib/libsz.a
+HDFLIB = ../lib/libhdfeos.a ../lib/libmfhdf.a ../lib/libdf.a ../lib/libjpeg.a
 #HDF5LIB = -L../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5_hl.a ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5.a
 HDF5LIB = -L../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib -lhdf5_hl -lhdf5
 TIFFLIB = ../lib/libgeotiff.a ../lib/libtiff.a
