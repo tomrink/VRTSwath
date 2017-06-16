@@ -40,7 +40,8 @@ EXE = swath2grid
 #-----------------------------
 GEOLIB = ../lib/libgctp.a
 HDFLIB = ../lib/libhdfeos.a ../lib/libmfhdf.a ../lib/libdf.a ../lib/libjpeg.a ../lib/libz.a ../lib/libsz.a
-HDF5LIB = -L../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5_hl.a ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5.a
+#HDF5LIB = -L../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5_hl.a ../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib/libhdf5.a
+HDF5LIB = -L../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib -lhdf5_hl -lhdf5
 TIFFLIB = ../lib/libgeotiff.a ../lib/libtiff.a
 
 #-------------------------------------------------------------------
