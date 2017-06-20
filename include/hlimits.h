@@ -24,7 +24,7 @@
 /**************************************************************************
 *  Generally useful macro definitions
 *   (These are copied from hdfi.h and shoudl remain included in both files
-*       because hlimits.h is included from netcdf.h which is used in some
+*       because hlimits.h is included from netcdf3.h which is used in some
 *       netCDF utilities which don't need or want the rest of the HDF header
 *       files. -QAK - 2/17/99 )
 **************************************************************************/
@@ -157,7 +157,7 @@
 #   define ERR_STRING_SIZE 512
 #endif
 
-/* ----------------- Constants for NETCDF interface(netcdf.h) ---------------- */
+/* ----------------- Constants for NETCDF interface(netcdf3.h) ---------------- */
 /*
  * This can be as large as the maximum number of stdio streams
  * you can have open on your system.
