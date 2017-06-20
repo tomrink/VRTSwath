@@ -142,7 +142,6 @@
 #include "myisoc.h"
 #include "geowrpr.h"
 #include "rb.h"
-#include "addmeta.h"
 #include "logh.h"
 
 #include "hdf5.h"
@@ -685,8 +684,10 @@ int main (int argc, const char **argv)
         /* If not appending, write metadata to output HDF file */
         if (file_created)
         {
+/*
           if (!WriteMeta(output->file_name, &param->output_space_def)) 
             LOG_ERROR("writing metadata", "main");
+*/
         }
         if (!CloseOutput(output))
           LOG_ERROR("closing output file", "main");
@@ -775,9 +776,9 @@ int main (int argc, const char **argv)
 
       /* Append the metadata for this HDF file, only for the SDSs of the
          current resolution */
-      if (!AppendMetadata(param_save, HDF_File, param_save->input_file_name,
-        curr_sds)) 
-      {
+      //if (!AppendMetadata(param_save, HDF_File, param_save->input_file_name,
+      //  curr_sds)) 
+      //{
           /* NOTE: We won't flag this as an error, since in some cases the
              resolution file may not exist.  For example, if a MOD02HKM is
              specified and the Latitude or Longitude data is specified, then
@@ -788,7 +789,7 @@ int main (int argc, const char **argv)
              So, AppendMetadata will flag an error since that HDF file will
              not really exist. */
 /*        LOG_ERROR("appending metadata to the output HDF file","main"); */
-      }
+      //}
 
       /* Loop through the rest of the SDSs and unmark the ones of the same
          resolution, since they will be output to this same HDF file

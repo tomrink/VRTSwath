@@ -57,6 +57,8 @@
 #include "myproj.h"
 #include "const.h"
 
+#include "netcdf.h"
+
 bool CreateOutput(char *file_name)
 /* 
 !C******************************************************************************
@@ -83,17 +85,23 @@ bool CreateOutput(char *file_name)
 */
 {
   int32 hdf_file_id;
+  int ncid, retval;
 
+  retval = nc_create("test.nc", NC_CLOBBER, &ncid);
   /* Create the file with HDF open */
+  printf("retval: %d\n", retval);
 
-  hdf_file_id = Hopen(file_name, DFACC_CREATE, DEF_NDDS); 
+  //hdf_file_id = Hopen(file_name, DFACC_CREATE, DEF_NDDS); 
   if(hdf_file_id == HDF_ERROR) {
     LOG_RETURN_ERROR("creating output file", "CreateOutput", false); 
   }
 
   /* Close the file */
 
-  Hclose(hdf_file_id);
+  //Hclose(hdf_file_id);
+  
+  retval = nc_close(ncid);
+  printf("retval: %d\n", retval);
 
   return true;
 }
@@ -192,7 +200,7 @@ Output_t *OutputFile(char *file_name, char *sds_name,
 
   /* Open file for SD access */
 
-  this->sds_file_id = SDstart((char *)file_name, DFACC_RDWR);
+  //this->sds_file_id = SDstart((char *)file_name, DFACC_RDWR);
   if (this->sds_file_id == HDF_ERROR) {
     free(this->sds.name);
     free(this->file_name);
@@ -208,8 +216,10 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   this->sds.rank = 2;
   this->sds.dim[0].nval = this->size.l;
   this->sds.dim[1].nval = this->size.s;
+/*
   if (!PutSDSInfo(this->sds_file_id, &this->sds))
     error_string = "setting up the SDS";
+*/
 
   if (error_string == (char *)NULL) {
     this->sds.dim[0].type = output_data_type;
@@ -222,7 +232,7 @@ Output_t *OutputFile(char *file_name, char *sds_name,
 
     this->sds.dim[0].name = DupString(tmpstr);
     if (this->sds.dim[0].name == (char *)NULL) {
-      SDendaccess(this->sds.id);
+      //SDendaccess(this->sds.id);
       error_string = "duplicating dim name (l)";
     }
   }
@@ -236,13 +246,14 @@ Output_t *OutputFile(char *file_name, char *sds_name,
     this->sds.dim[1].name = DupString(tmpstr);
     if (this->sds.dim[1].name == (char *)NULL) {
       free(this->sds.dim[0].name);
-      SDendaccess(this->sds.id);
+      //SDendaccess(this->sds.id);
       error_string = "duplicating dim name (s)";
     }
   }
 
   if (error_string == (char *)NULL) {
     for (ir = 0; ir < this->sds.rank; ir++) {
+/*
       if (!PutSDSDimInfo(this->sds.id, &this->sds.dim[ir], ir)) {
         free(this->sds.dim[1].name);
         free(this->sds.dim[0].name);
@@ -250,11 +261,12 @@ Output_t *OutputFile(char *file_name, char *sds_name,
         error_string = "setting up the SDS";
 	break; 
       }
+*/
     }
   }
 
   if (error_string != (char *)NULL) {
-    SDend(this->sds_file_id);
+    //SDend(this->sds_file_id);
     free(this->sds.name);
     free(this->file_name);
     free(this);  
@@ -301,10 +313,10 @@ bool CloseOutput(Output_t *this)
  if (!this->open)
     LOG_RETURN_ERROR("file not open", "CloseOutput", false);
 
-  if (SDendaccess(this->sds.id) == HDF_ERROR) 
+  //if (SDendaccess(this->sds.id) == HDF_ERROR) 
     LOG_RETURN_ERROR("ending sds access", "CloseOutput", false);
 
-  SDend(this->sds_file_id);
+  //SDend(this->sds_file_id);
   this->open = false;
 
   return true;
@@ -399,9 +411,11 @@ bool WriteOutput(Output_t *this, int iline, void *buf)
   nval[0] = 1;
   nval[1] = this->size.s;
 
+/*
   if (SDwritedata(this->sds.id, start, NULL, nval, 
                   buf) == HDF_ERROR)
       LOG_RETURN_ERROR("writing output", "WriteOutput", false);
+*/
   
   return true;
 }
