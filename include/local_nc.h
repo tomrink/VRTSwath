@@ -54,7 +54,7 @@
 #endif /* !macintosh */
 #endif /* NO_SYSTEM_XDR_INCLUDES */
 
-#include	"netcdf.h" /* needed for defs of nc_type, ncvoid, ... */
+#include	"netcdf3.h" /* needed for defs of nc_type, ncvoid, ... */
 
 /* ptr argument type in internal functions */
 #define Void    char
