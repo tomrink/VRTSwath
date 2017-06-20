@@ -22,7 +22,7 @@
 /* change this back if it causes problems on other machines than the Alhpa-QAK */
 /* Reverse back to the previous way. AKC */
 #include "hdf.h"
-#include "netcdf.h"
+#include "netcdf3.h"
 #ifdef OLD_WAY
 #include "local_nc.h"
 #endif /* OLD_WAY */
