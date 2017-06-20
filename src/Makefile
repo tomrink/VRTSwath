@@ -1,13 +1,11 @@
 
 CC = gcc
 CFLAGS = -O3 -Wall -W -Wno-switch -g
-#LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -lm -lsz -lz -ldl -lm -Wl,-rpath -Wl,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
-#LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -lm -lz -ldl -lm -Wl,-rpath -Wl,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
-LDFLAGS = $(HDFLIB) $(HDF5LIB) $(GEOLIB) $(TIFFLIB) -g -lsz -lz -ldl -lm -Wl,-rpath,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
+LDFLAGS = $(HDF5LIB) $(NETCDF4LIB) $(GEOLIB) $(TIFFLIB) -g -lsz -lz -ldl -lm -lcurl -Wl,-rpath,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
 MV = mv
 CP = cp
 RM = rm -f
-INCS  = -I../include -I../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/include
+INCS  = -I../include -I/opt/netcdf4/4.4.1.1-gcc-4.9.2/include -I../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/include
 
 
 #--------------------------
@@ -15,7 +13,7 @@ INCS  = -I../include -I../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/incl
 #--------------------------
 INC	= resamp.h param.h geoloc.h input.h scan.h output.h space.h kernel.h \
 	 patches.h myhdf.h mystring.h myerror.h bool.h range.h parser.h \
-	 myproj.h myproj_const.h usage.h const.h deg2dms.h GeoS2G.h addmeta.h \
+	 myproj.h myproj_const.h usage.h const.h deg2dms.h GeoS2G.h \
 	 geowrpr.h myendian.h
 
 #-----------------------------------------------------------
@@ -23,8 +21,8 @@ INC	= resamp.h param.h geoloc.h input.h scan.h output.h space.h kernel.h \
 #-----------------------------------------------------------
 SRC	= param.c geoloc.c input.c scan.c output.c space.c kernel.c \
 	  patches.c myhdf.c mystring.c parser.c myerror.c \
-	  InitGeoTiff.c deg2dms.c degdms.c convert_corners.c metadata.c \
-	  geo_trans.c write_hdr.c write_rb.c addmeta.c logh.c geowrpr.c \
+	  InitGeoTiff.c deg2dms.c degdms.c convert_corners.c \
+	  geo_trans.c write_hdr.c write_rb.c logh.c geowrpr.c \
 	  filegeo.c myendian.c
 
 OBJ = $(SRC:.c=.o)
@@ -32,16 +30,15 @@ OBJ = $(SRC:.c=.o)
 #----------------------------------
 # Define the resampler executables:
 #----------------------------------
-#EXE = swath2grid dumpmeta hdf2hdr test
 EXE = swath2grid
 
 #-----------------------------
 # Define the object libraries:
 #-----------------------------
 GEOLIB = ../lib/libgctp.a
-HDFLIB = ../lib/libmfhdf.a ../lib/libdf.a ../lib/libjpeg.a
 HDF5LIB = -L../../hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib -lhdf5_hl -lhdf5
-TIFFLIB = ../lib/libgeotiff.a ../lib/libtiff.a
+TIFFLIB = -L/usr/lib64 -ljpeg /usr/lib64/libtiff.so.5.2.0 ../lib/libgeotiff.a
+NETCDF4LIB = -L/opt/netcdf4/4.4.1.1-gcc-4.9.2/lib -lnetcdf
 
 #-------------------------------------------------------------------
 # Targets for each executable.
