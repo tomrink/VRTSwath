@@ -147,7 +147,7 @@ bool GetSingleValueAttrAsDouble(hid_t dataset, char *attrName, double *dblVal) {
     attr = H5Aopen(dataset, attrName, H5P_DEFAULT);
     attrType = H5Aget_type (attr);
     nativeType = getNativeType(attrType);
-    if (nativeType == NULL) {
+    if (nativeType == H5I_INVALID_HID) {
         LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
     }
     
@@ -459,14 +459,12 @@ bool readData(hid_t dataset, int *start, int *count, void *buf) {
 hid_t getNativeType(hid_t datatype) {
     hid_t outtype;
     H5T_class_t t_class;
-    H5T_order_t order;
     size_t      size;
     H5T_sign_t  sign;
     
     char msg[M_MSG_LEN+1];
     
     t_class   = H5Tget_class(datatype);
-    order     = H5Tget_order(datatype);
     size      = H5Tget_size(datatype);
     sign      = H5Tget_sign(datatype);
 
@@ -496,9 +494,9 @@ hid_t getNativeType(hid_t datatype) {
             }            
         }
         else {
-            sprintf(msg, "can only handle INTEGER sizes of 1, 2, 4, 8, not: %d \n", size);
+            sprintf(msg, "can only handle INTEGER sizes of 1, 2, 4, 8, not: %d \n", (int) size);
             LogInfomsg(msg);
-            return NULL;            
+            return H5I_INVALID_HID;            
         }
     }
     else if (t_class == H5T_FLOAT) {
@@ -509,15 +507,15 @@ hid_t getNativeType(hid_t datatype) {
             outtype = H5T_NATIVE_DOUBLE;
         }
         else {
-            sprintf(msg, "can't handle dataset FLOAT type with size: %d \n", size);
+            sprintf(msg, "can't handle dataset FLOAT type with size: %d \n", (int) size);
             LogInfomsg(msg);
-            return NULL;
+            return H5I_INVALID_HID;
         }
     }
     else {
-        sprintf(msg, "can only handle numeric (FLOAT, INTEGER) datatypes, not: %d \n", t_class);
+        sprintf(msg, "can only handle numeric (FLOAT, INTEGER) datatypes, not: %d \n", (int) t_class);
         LogInfomsg(msg);
-        return NULL;
+        return H5I_INVALID_HID;
     }
     
     return outtype;
