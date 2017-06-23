@@ -56,8 +56,7 @@
 #include "myerror.h"
 #include "myproj.h"
 #include "const.h"
-
-#include "netcdf.h"
+#include <netcdf.h>
 
 bool CreateOutput(char *file_name)
 /* 
@@ -84,24 +83,21 @@ bool CreateOutput(char *file_name)
 !END****************************************************************************
 */
 {
-  int32 hdf_file_id;
   int ncid, retval;
 
-  retval = nc_create("test.nc", NC_CLOBBER, &ncid);
-  /* Create the file with HDF open */
-  printf("retval: %d\n", retval);
-
-  //hdf_file_id = Hopen(file_name, DFACC_CREATE, DEF_NDDS); 
-  if(hdf_file_id == HDF_ERROR) {
-    LOG_RETURN_ERROR("creating output file", "CreateOutput", false); 
+  retval = nc_create(file_name, 0x1000, &ncid);
+  if (retval != 0) {
+     printf("Error: %s\n", nc_strerror(retval));
+     LOG_RETURN_ERROR("creating output file", "CreateOutput", false);
   }
 
   /* Close the file */
 
-  //Hclose(hdf_file_id);
-  
   retval = nc_close(ncid);
-  printf("retval: %d\n", retval);
+  if (retval != 0) {
+     printf("Error: %s\n", nc_strerror(retval));
+     LOG_RETURN_ERROR("creating output file", "CreateOutput", false);
+  }
 
   return true;
 }
@@ -150,6 +146,9 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   int ir;
   char *error_string = (char *)NULL;
   char tmpstr[1024];
+  
+  int retval, ncid, x_dimid, y_dimid, varid;
+  int dimids[2];
 
   /* Check parameters */
   
@@ -188,7 +187,8 @@ Output_t *OutputFile(char *file_name, char *sds_name,
     LOG_RETURN_ERROR("duplicating file name", "OutputFile", (Output_t *)NULL);
   }
 
-  this->sds.name = DupString(sds_name);
+  //this->sds.name = DupString(sds_name);
+  this->sds.name = DupString("M07");
   if (this->sds.name == (char *)NULL) {
     free(this->file_name);
     free(this);
@@ -200,15 +200,17 @@ Output_t *OutputFile(char *file_name, char *sds_name,
 
   /* Open file for SD access */
 
-  //this->sds_file_id = SDstart((char *)file_name, DFACC_RDWR);
-  if (this->sds_file_id == HDF_ERROR) {
+  retval = nc_open(file_name, NC_WRITE, &ncid);
+  if (retval != 0) {
     free(this->sds.name);
     free(this->file_name);
     free(this);  
-    LOG_RETURN_ERROR("opening output file for SD access", "OutputFile", 
-                 (Output_t *)NULL); 
+    LOG_RETURN_ERROR("opening output file access", "OutputFile", (Output_t *)NULL);
   }
-  this->open = true;
+  else {
+     this->sds_file_id = ncid;
+     this->open = true;
+  } 
 
   /* Set up SDS */
 
@@ -216,57 +218,67 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   this->sds.rank = 2;
   this->sds.dim[0].nval = this->size.l;
   this->sds.dim[1].nval = this->size.s;
-/*
-  if (!PutSDSInfo(this->sds_file_id, &this->sds))
-    error_string = "setting up the SDS";
-*/
+  this->sds.dim[0].name = DupString("y");
+  this->sds.dim[1].name = DupString("x");
+  
+  /* Define the dimensions. NetCDF will hand back an ID for each. */
+  retval = nc_def_dim(ncid, this->sds.dim[1].name, this->size.s, &x_dimid);
+  retval = nc_def_dim(ncid, this->sds.dim[0].name, this->size.l, &y_dimid);
 
-  if (error_string == (char *)NULL) {
-    this->sds.dim[0].type = output_data_type;
-    this->sds.dim[1].type = output_data_type;
+  /* The dimids array is used to pass the IDs of the dimensions of
+   * the variable. */
+  dimids[0] = y_dimid;
+  dimids[1] = x_dimid;
+  
+  nc_type nctype;
 
-    if (space_def->proj_num == PROJ_GEO)
-       sprintf (tmpstr, "lines %.8f", space_def->pixel_size*DEG);
-    else
-       sprintf (tmpstr, "lines %.2f", space_def->pixel_size);
-
-    this->sds.dim[0].name = DupString(tmpstr);
-    if (this->sds.dim[0].name == (char *)NULL) {
-      //SDendaccess(this->sds.id);
-      error_string = "duplicating dim name (l)";
-    }
+  if (output_data_type == DFNT_INT8) {
+      nctype = NC_BYTE;
+  }
+  else if (output_data_type == DFNT_CHAR8) {
+      nctype = NC_CHAR;
+  }
+  else if (output_data_type == DFNT_UINT16) {
+      nctype = NC_USHORT;
+  }
+  else if (output_data_type == DFNT_INT16) {
+      nctype = NC_SHORT;
+  }
+  else if (output_data_type == DFNT_UINT32) {
+      nctype = NC_UINT;
+  }
+  else if (output_data_type == DFNT_INT32) {
+      nctype = NC_INT;
+  }
+  else if (output_data_type == DFNT_FLOAT32) {
+      nctype = NC_FLOAT;
+  }
+  else if (output_data_type == DFNT_FLOAT64) {
+      nctype = NC_DOUBLE;
+  }
+  else {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Unrecognized output data type", "OutputFile", (Output_t *)NULL);      
+  }
+   
+  retval = nc_def_var(ncid, this->sds.name, nctype, 2, dimids, &varid);
+  if (retval != 0) {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem creating variable", "OutputFile", (Output_t *)NULL);
+      
+  }
+  else {
+     this->sds.id = varid;
   }
 
-  if (error_string == (char *)NULL) {
-    if (space_def->proj_num == PROJ_GEO)
-       sprintf (tmpstr, "samps %.8f", space_def->pixel_size*DEG);
-    else
-       sprintf (tmpstr, "samps %.2f", space_def->pixel_size);
-
-    this->sds.dim[1].name = DupString(tmpstr);
-    if (this->sds.dim[1].name == (char *)NULL) {
-      free(this->sds.dim[0].name);
-      //SDendaccess(this->sds.id);
-      error_string = "duplicating dim name (s)";
-    }
-  }
-
-  if (error_string == (char *)NULL) {
-    for (ir = 0; ir < this->sds.rank; ir++) {
-/*
-      if (!PutSDSDimInfo(this->sds.id, &this->sds.dim[ir], ir)) {
-        free(this->sds.dim[1].name);
-        free(this->sds.dim[0].name);
-        SDendaccess(this->sds.id);
-        error_string = "setting up the SDS";
-	break; 
-      }
-*/
-    }
-  }
+  /* End define mode. This tells netCDF we are done defining metadata */
+  retval = nc_enddef(ncid);
 
   if (error_string != (char *)NULL) {
-    //SDend(this->sds_file_id);
     free(this->sds.name);
     free(this->file_name);
     free(this);  
@@ -309,15 +321,15 @@ bool CloseOutput(Output_t *this)
 !END****************************************************************************
 */
 {
+    int retval;
 
- if (!this->open)
-    LOG_RETURN_ERROR("file not open", "CloseOutput", false);
+    if (!this->open) {
+      LOG_RETURN_ERROR("file not open", "CloseOutput", false);
+    }
 
-  //if (SDendaccess(this->sds.id) == HDF_ERROR) 
-    LOG_RETURN_ERROR("ending sds access", "CloseOutput", false);
 
-  //SDend(this->sds_file_id);
-  this->open = false;
+    retval = nc_close(this->sds_file_id);
+    this->open = false;
 
   return true;
 }
@@ -394,7 +406,8 @@ bool WriteOutput(Output_t *this, int iline, void *buf)
 !END****************************************************************************
 */
 {
-  int32 start[MYHDF_MAX_RANK], nval[MYHDF_MAX_RANK];
+  size_t start[2], nval[2];
+  int retval;
 
   /* Check the parameters */
 
@@ -410,12 +423,43 @@ bool WriteOutput(Output_t *this, int iline, void *buf)
   start[1] = 0;
   nval[0] = 1;
   nval[1] = this->size.s;
-
-/*
-  if (SDwritedata(this->sds.id, start, NULL, nval, 
-                  buf) == HDF_ERROR)
-      LOG_RETURN_ERROR("writing output", "WriteOutput", false);
-*/
   
-  return true;
+
+  int32 type = this->sds.type;
+  
+
+  if (type == DFNT_INT8) {
+      retval = nc_put_vara_schar(this->sds_file_id, this->sds.id, start, nval, buf);
+  }
+  else if (type == DFNT_CHAR) {
+      retval = nc_put_vara_uchar(this->sds_file_id, this->sds.id, start, nval, buf);
+  }
+  else if (type == DFNT_UINT16) {
+      retval = nc_put_vara_ushort(this->sds_file_id, this->sds.id, start, nval, buf);
+  }
+  else if (type == DFNT_INT16) {
+      retval = nc_put_vara_short(this->sds_file_id, this->sds.id, start, nval, buf);
+  }
+  else if (type == DFNT_UINT32) {
+      retval = nc_put_vara_uint(this->sds_file_id, this->sds.id, start, nval, buf);
+  }
+  else if (type == DFNT_INT32) {
+      retval = nc_put_vara_int(this->sds_file_id, this->sds.id, start, nval, buf);
+  }
+  else if (type == DFNT_FLOAT32) {
+      retval = nc_put_vara_float(this->sds_file_id, this->sds.id, start, nval, buf);
+  }
+  else if (type == DFNT_FLOAT64) {
+      retval = nc_put_vara_double(this->sds_file_id, this->sds.id, start, nval, buf);      
+  }
+  else {
+      LOG_RETURN_ERROR("unrecognized type", "WriteOutput", false);
+  }
+  
+  if (retval != 0) {
+      LOG_RETURN_ERROR("problem writing scan line", "WriteOutput", false);     
+  }
+  else {
+      return true;
+  }
 }
