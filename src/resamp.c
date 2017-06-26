@@ -145,6 +145,7 @@
 #include "logh.h"
 
 #include "hdf5.h"
+#include "netcdf.h"
 
 /* Macros */
 
@@ -540,17 +541,17 @@ int main (int argc, const char **argv)
           if (param->output_space_def.proj_num != PROJ_GEO)
             /* Output the pixel size with only two decimal places, since
                the pixel size will be in meters */
-            sprintf(HDF_File, "%s_%dm.hdf", param->output_file_name,
+            sprintf(HDF_File, "%s_%dm.nc", param->output_file_name,
               (int) param->output_pixel_size[curr_sds]);
           else
             /* Output the pixel size with four decimal places, since the
                pixel size will be in degrees (need to convert from radians) */
-            sprintf(HDF_File, "%s_%.04fd.hdf", param->output_file_name,
+            sprintf(HDF_File, "%s_%.04fd.nc", param->output_file_name,
               param->output_pixel_size[curr_sds] * DEG);
         }
         else
         {
-          sprintf(HDF_File, "%s.hdf", param->output_file_name);
+          sprintf(HDF_File, "%s.nc", param->output_file_name);
         }
 
         /* Does the HDF file need to be created? */
@@ -761,17 +762,17 @@ int main (int argc, const char **argv)
         if (param_save->output_space_def.proj_num != PROJ_GEO)
           /* Output the pixel size with only two decimal places, since
              the pixel size will be in meters */
-          sprintf(HDF_File, "%s_%dm.hdf", param_save->output_file_name,
+          sprintf(HDF_File, "%s_%dm.nc", param_save->output_file_name,
             (int) param_save->output_pixel_size[curr_sds]);
         else
           /* Output the pixel size with four decimal places, since the
              pixel size will be in degrees (need to convert from radians) */
-          sprintf(HDF_File, "%s_%.04fd.hdf", param_save->output_file_name,
+          sprintf(HDF_File, "%s_%.04fd.nc", param_save->output_file_name,
             param_save->output_pixel_size[curr_sds] * DEG);
       }
       else
       {
-        sprintf(HDF_File, "%s.hdf", param_save->output_file_name);
+        sprintf(HDF_File, "%s.nc", param_save->output_file_name);
       }
 
       /* Append the metadata for this HDF file, only for the SDSs of the
