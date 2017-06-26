@@ -58,6 +58,13 @@
 #include "const.h"
 #include <netcdf.h>
 
+#define UNITS "units"
+#define STANDARD_NAME "standard_name"
+#define PROJECTION_X_COORDINATE "projection_x_coordinate"
+#define PROJECTION_Y_COORDINATE "projection_y_coordinate"
+#define GRID_MAPPING "grid_mapping"
+#define GRID_PROJECTION "grid_projection"
+
 bool CreateOutput(char *file_name)
 /* 
 !C******************************************************************************
@@ -274,6 +281,13 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   else {
      this->sds.id = varid;
   }
+  retval = nc_put_att_text(ncid, varid, GRID_MAPPING, strlen(GRID_PROJECTION), GRID_PROJECTION);
+  if (retval != 0) {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem putting attribute", "OutputFile", (Output_t *)NULL);      
+  }
   
   /* define coordinate variables */
   xdimids[0] = dimids[1];
@@ -286,7 +300,14 @@ Output_t *OutputFile(char *file_name, char *sds_name,
       free(this);
       LOG_RETURN_ERROR("Problem creating coordinate variable", "OutputFile", (Output_t *)NULL);
       
-  } 
+  }
+  retval = nc_put_att_text(ncid, x_varid, STANDARD_NAME, strlen(PROJECTION_X_COORDINATE), PROJECTION_X_COORDINATE);
+  if (retval != 0) {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem putting attribute", "OutputFile", (Output_t *)NULL);      
+  }
   
   retval = nc_def_var(ncid, this->sds.dim[0].name, NC_FLOAT, 1, ydimids, &y_varid);
   if (retval != 0) {
@@ -296,6 +317,13 @@ Output_t *OutputFile(char *file_name, char *sds_name,
       LOG_RETURN_ERROR("Problem creating coordinate variable", "OutputFile", (Output_t *)NULL);
       
   }  
+  retval = nc_put_att_text(ncid, y_varid, STANDARD_NAME, strlen(PROJECTION_Y_COORDINATE), PROJECTION_Y_COORDINATE);
+  if (retval != 0) {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem putting attribute", "OutputFile", (Output_t *)NULL);      
+  }
   
   /* End define mode. This tells netCDF we are done defining metadata */
   retval = nc_enddef(ncid);
