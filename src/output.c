@@ -154,8 +154,9 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   char *error_string = (char *)NULL;
   char tmpstr[1024];
   
-  int retval, ncid, x_dimid, y_dimid, varid, x_varid, y_varid;
+  int retval, ncid, x_dimid, y_dimid, varid, x_varid, y_varid, proj_varid;
   int dimids[2], xdimids[1], ydimids[1];
+  int dimid;
 
   /* Check parameters */
   
@@ -231,6 +232,7 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   /* Define the dimensions. NetCDF will hand back an ID for each. */
   retval = nc_def_dim(ncid, this->sds.dim[1].name, this->size.s, &x_dimid);
   retval = nc_def_dim(ncid, this->sds.dim[0].name, this->size.l, &y_dimid);
+  retval = nc_def_dim(ncid, "generic", 1, &dimid);
 
   /* The dimids array is used to pass the IDs of the dimensions of
    * the variable. */
@@ -324,6 +326,20 @@ Output_t *OutputFile(char *file_name, char *sds_name,
       free(this);
       LOG_RETURN_ERROR("Problem putting attribute", "OutputFile", (Output_t *)NULL);      
   }
+
+  retval = nc_def_var(ncid, GRID_PROJECTION, NC_INT, 1, dimid, &proj_varid);
+  if (retval != 0) {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem creating projection variable", "OutputFile", (Output_t *)NULL);
+  }  
+
+
+  
+  
+  
+  
   
   /* End define mode. This tells netCDF we are done defining metadata */
   retval = nc_enddef(ncid);
