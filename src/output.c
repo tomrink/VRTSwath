@@ -147,8 +147,8 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   char *error_string = (char *)NULL;
   char tmpstr[1024];
   
-  int retval, ncid, x_dimid, y_dimid, varid;
-  int dimids[2];
+  int retval, ncid, x_dimid, y_dimid, varid, x_varid, y_varid;
+  int dimids[2], xdimids[1], ydimids[1];
 
   /* Check parameters */
   
@@ -274,7 +274,29 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   else {
      this->sds.id = varid;
   }
-
+  
+  /* define coordinate variables */
+  xdimids[0] = dimids[1];
+  ydimids[0] = dimids[0];
+  
+  retval = nc_def_var(ncid, this->sds.dim[1].name, NC_FLOAT, 1, xdimids, &x_varid);
+  if (retval != 0) {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem creating coordinate variable", "OutputFile", (Output_t *)NULL);
+      
+  } 
+  
+  retval = nc_def_var(ncid, this->sds.dim[0].name, NC_FLOAT, 1, ydimids, &y_varid);
+  if (retval != 0) {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem creating coordinate variable", "OutputFile", (Output_t *)NULL);
+      
+  }  
+  
   /* End define mode. This tells netCDF we are done defining metadata */
   retval = nc_enddef(ncid);
 
