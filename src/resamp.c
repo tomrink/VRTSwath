@@ -590,11 +590,6 @@ int main (int argc, const char **argv)
         } else if( MasterGeoMem->error ) {
            LOG_ERROR(MasterGeoMem->error_msg, "main");
         }
-
-/* Remove due to clash of tiff and hdf header files.
- *        if (!OpenGeoTIFFFile (param, &MasterGeoMem))
- *         LOG_ERROR("opening and initializing GeoTiff file", "main");
- */
       }
 
       /* Read patches (in input data type) and write to output file (in
