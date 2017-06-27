@@ -494,15 +494,6 @@ int main (int argc, const char **argv)
          output to the metadata */
       param_save->fill_value[curr_sds] = patches->fill_value;
 
-      /* If output is raw binary, then we need the patches information
-         so write the header before deleting the patches info */
-      if (param->output_file_format == RB_FMT)
-      { /* Output is raw binary */
-        /* Create the raw binary header file */
-        if (!WriteHeaderFile (param, patches))
-          LOG_ERROR("writing raw binary header file", "main");
-      }
-
       /* Done with scan and kernel strutures */
       if (!FreeScan(scan))
         LOG_ERROR("freeing scan structure", "main");
@@ -606,66 +597,6 @@ int main (int argc, const char **argv)
  */
       }
 
-      if (param->output_file_format == RB_FMT)
-      { /* Output is raw binary */
-        output = &output_mem;
-        output->size.l = param->output_space_def.img_size.l;
-        output->size.s = param->output_space_def.img_size.s;
-        output->open   = true;
-
-        /* Get the size of the data type */
-        switch (param->output_data_type)
-        {
-          case DFNT_INT8:
-          case DFNT_UINT8:
-            /* one byte in size */
-            output->output_dt_size = 1;
-            break;
-
-          case DFNT_INT16:
-          case DFNT_UINT16:
-            /* two bytes in size */
-            output->output_dt_size = 2;
-            break;
-
-          case DFNT_INT32:
-          case DFNT_UINT32:
-          case DFNT_FLOAT32:
-            /* four bytes in size */
-            output->output_dt_size = 4;
-            break;
-        }
-
-        /* Copy the SDS name and remove any '/'s in the SDSname */
-        j = 0;
-        for (i = 0; i < (int)strlen(param->output_sds_name); i++)
-        {
-          if (param->output_sds_name[i] != '/' &&
-              param->output_sds_name[i] != '\\')
-          {
-            sdsname[j++] = param->output_sds_name[i];
-          }
-          sdsname[j] = '\0';
-        }
-
-        /* Remove any spaces (from the SDS name) from the name */
-        k = 0;
-        while (sdsname[k])
-        {
-          if (isspace(sdsname[k]))
-            sdsname[k] = '_';
-          k++;
-        }
-
-        /* Add the SDS band name and dat extension to the filename */
-        sprintf(filename, "%s_%s.dat", param->output_file_name,
-          sdsname);
-
-        rbfile = fopen(filename, "wb");
-        if (rbfile == NULL)
-          LOG_ERROR("opening output raw binary file", "main");
-      }
-
       /* Read patches (in input data type) and write to output file (in
          output data type). If NN kernel, then fill any holes left from the
          resampling process. */
@@ -700,13 +631,6 @@ int main (int argc, const char **argv)
       {
         Close_GEOTIFF( MasterGeoMem );
         /* CloseGeoTIFFFile(&MasterGeoMem); */
-        output->open = false;
-      }
-
-      /* Close output raw binary file */
-      if (param->output_file_format == RB_FMT)
-      {
-        fclose(rbfile);
         output->open = false;
       }
 
