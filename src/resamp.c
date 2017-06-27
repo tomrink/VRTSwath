@@ -524,27 +524,8 @@ int main (int argc, const char **argv)
       if (param->output_file_format == HDF_FMT ||
           param->output_file_format == BOTH)
       { /* Output is HDF */
-        /* Create output file. If the output has multiple resolutions, then
-           the resolution value will be used as an extension to the basename.
-           Otherwise no resolution extension will be used. */
-        if (param->multires)
-        {
-          if (param->output_space_def.proj_num != PROJ_GEO)
-            /* Output the pixel size with only two decimal places, since
-               the pixel size will be in meters */
-            sprintf(HDF_File, "%s_%dm.nc", param->output_file_name,
-              (int) param->output_pixel_size[curr_sds]);
-          else
-            /* Output the pixel size with four decimal places, since the
-               pixel size will be in degrees (need to convert from radians) */
-            sprintf(HDF_File, "%s_%.04fd.nc", param->output_file_name,
-              param->output_pixel_size[curr_sds] * DEG);
-        }
-        else
-        {
-          sprintf(HDF_File, "%s.nc", param->output_file_name);
-        }
 
+        sprintf(HDF_File, "%s.nc", param->output_file_name);
         /* Does the HDF file need to be created? */
         if (param->create_output[curr_sds])
         {
@@ -676,23 +657,7 @@ int main (int argc, const char **argv)
         continue;
 
       /* Determine the name of the output HDF file */
-      if (param_save->multires)
-      {
-        if (param_save->output_space_def.proj_num != PROJ_GEO)
-          /* Output the pixel size with only two decimal places, since
-             the pixel size will be in meters */
-          sprintf(HDF_File, "%s_%dm.nc", param_save->output_file_name,
-            (int) param_save->output_pixel_size[curr_sds]);
-        else
-          /* Output the pixel size with four decimal places, since the
-             pixel size will be in degrees (need to convert from radians) */
-          sprintf(HDF_File, "%s_%.04fd.nc", param_save->output_file_name,
-            param_save->output_pixel_size[curr_sds] * DEG);
-      }
-      else
-      {
-        sprintf(HDF_File, "%s.nc", param_save->output_file_name);
-      }
+      sprintf(HDF_File, "%s.nc", param_save->output_file_name);
 
       /* Append the metadata for this HDF file, only for the SDSs of the
          current resolution */
