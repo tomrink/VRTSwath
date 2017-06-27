@@ -52,6 +52,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include "output.h"
 #include "myerror.h"
 #include "myproj.h"
@@ -64,6 +65,21 @@
 #define PROJECTION_Y_COORDINATE "projection_y_coordinate"
 #define GRID_MAPPING "grid_mapping"
 #define GRID_PROJECTION "grid_projection"
+#define SEMI_MAJOR_AXIS "semi_major_axis"
+#define SEMI_MINOR_AXIS "semi_minor_axis"
+#define GRID_MAPPING_NAME "grid_mapping_name"
+
+#define CENTER_LON "longitude_of_projection_origin"
+#define CENTER_LAT "latitude_of_projection_origin"
+#define FALSE_EASTING "false_easting"
+#define FALSE_NORTHING "false_northing"
+#define LAMAZ "lambert_azimuthal_equal_area"
+
+#define GENERIC "generic"
+#define METER "meter"
+
+#define CONVENTIONS "Conventions"
+#define CF_1_7 "CF-1.7"
 
 bool CreateOutput(char *file_name)
 /* 
@@ -150,13 +166,15 @@ Output_t *OutputFile(char *file_name, char *sds_name,
 */
 {
   Output_t *this;
-  int ir;
+  int ir, k;
   char *error_string = (char *)NULL;
   char tmpstr[1024];
   
   int retval, ncid, x_dimid, y_dimid, varid, x_varid, y_varid, proj_varid;
-  int dimids[2], xdimids[1], ydimids[1];
+  int dimids[2], xdimids[1], ydimids[1], dimid_1d[1];
   int dimid;
+  int start[1];
+  int nval[1];
 
   /* Check parameters */
   
@@ -194,9 +212,19 @@ Output_t *OutputFile(char *file_name, char *sds_name,
     free(this);
     LOG_RETURN_ERROR("duplicating file name", "OutputFile", (Output_t *)NULL);
   }
+  
+  /* keep only leaf of original dataset path name*/
+  const char *delim = "/";
+  char *name = strdup(sds_name);
+  char *tok;
+  tok = strtok(name, delim);
+  char *dataset_name;
+  while (tok != NULL) {
+      dataset_name = strdup(tok);
+      tok = strtok(NULL, delim);
+  }
 
-  //this->sds.name = DupString(sds_name);
-  this->sds.name = DupString("M07");
+  this->sds.name = dataset_name;
   if (this->sds.name == (char *)NULL) {
     free(this->file_name);
     free(this);
@@ -232,12 +260,13 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   /* Define the dimensions. NetCDF will hand back an ID for each. */
   retval = nc_def_dim(ncid, this->sds.dim[1].name, this->size.s, &x_dimid);
   retval = nc_def_dim(ncid, this->sds.dim[0].name, this->size.l, &y_dimid);
-  retval = nc_def_dim(ncid, "generic", 1, &dimid);
+  retval = nc_def_dim(ncid, GENERIC, 1, &dimid);
 
   /* The dimids array is used to pass the IDs of the dimensions of
    * the variable. */
   dimids[0] = y_dimid;
   dimids[1] = x_dimid;
+  dimid_1d[0] = dimid;
   
   nc_type nctype;
 
@@ -291,7 +320,7 @@ Output_t *OutputFile(char *file_name, char *sds_name,
       LOG_RETURN_ERROR("Problem putting attribute", "OutputFile", (Output_t *)NULL);      
   }
   
-  /* define coordinate variables */
+  /* Define spatial coordinate variables */
   xdimids[0] = dimids[1];
   ydimids[0] = dimids[0];
   
@@ -303,12 +332,21 @@ Output_t *OutputFile(char *file_name, char *sds_name,
       LOG_RETURN_ERROR("Problem creating coordinate variable", "OutputFile", (Output_t *)NULL);
       
   }
+  
   retval = nc_put_att_text(ncid, x_varid, STANDARD_NAME, strlen(PROJECTION_X_COORDINATE), PROJECTION_X_COORDINATE);
   if (retval != 0) {
       free(this->sds.name);
       free(this->file_name);
       free(this);
       LOG_RETURN_ERROR("Problem putting attribute", "OutputFile", (Output_t *)NULL);      
+  }
+  
+  retval = nc_put_att_text(ncid, x_varid, UNITS, strlen(METER), METER);
+  if (retval != 0) {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem putting units attribute", "OutputFile", (Output_t *)NULL);      
   }
   
   retval = nc_def_var(ncid, this->sds.dim[0].name, NC_FLOAT, 1, ydimids, &y_varid);
@@ -318,7 +356,8 @@ Output_t *OutputFile(char *file_name, char *sds_name,
       free(this);
       LOG_RETURN_ERROR("Problem creating coordinate variable", "OutputFile", (Output_t *)NULL);
       
-  }  
+  }
+  
   retval = nc_put_att_text(ncid, y_varid, STANDARD_NAME, strlen(PROJECTION_Y_COORDINATE), PROJECTION_Y_COORDINATE);
   if (retval != 0) {
       free(this->sds.name);
@@ -326,23 +365,77 @@ Output_t *OutputFile(char *file_name, char *sds_name,
       free(this);
       LOG_RETURN_ERROR("Problem putting attribute", "OutputFile", (Output_t *)NULL);      
   }
-
-  retval = nc_def_var(ncid, GRID_PROJECTION, NC_INT, 1, dimid, &proj_varid);
+  
+  retval = nc_put_att_text(ncid, y_varid, UNITS, strlen(METER), METER);  
+  if (retval != 0) {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem putting attribute", "OutputFile", (Output_t *)NULL);      
+  }
+  
+  /* Define the Projection meta-data variable */
+  retval = nc_def_var(ncid, GRID_PROJECTION, NC_INT, 0, dimid_1d, &proj_varid);
   if (retval != 0) {
       free(this->sds.name);
       free(this->file_name);
       free(this);
       LOG_RETURN_ERROR("Problem creating projection variable", "OutputFile", (Output_t *)NULL);
-  }  
+  }
 
-
+  float32 false_easting = 0.0;
+  float32 false_northing = 0.0;
+  float32 center_lon = space_def->orig_proj_param[4];
+  float32 center_lat = space_def->orig_proj_param[5];
+  
+  retval = nc_put_att_float(ncid, proj_varid, FALSE_EASTING, NC_FLOAT, 1, &false_easting);
+  retval = nc_put_att_float(ncid, proj_varid, FALSE_NORTHING, NC_FLOAT, 1, &false_northing);
+  retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(LAMAZ), LAMAZ);
+  retval = nc_put_att_float(ncid, proj_varid, CENTER_LON, NC_FLOAT, 1, &center_lon);
+  retval = nc_put_att_float(ncid, proj_varid, CENTER_LAT, NC_FLOAT, 1, &center_lat);
   
   
   
-  
+  /* Conventions global attribute */
+  retval = nc_put_att_text(ncid, NC_GLOBAL, CONVENTIONS, strlen(CF_1_7), CF_1_7);
   
   /* End define mode. This tells netCDF we are done defining metadata */
   retval = nc_enddef(ncid);
+  
+  /* populate spatial coordinate variables x and y*/
+  
+  float32 *x_values = (float32 *) calloc(this->size.s, sizeof(float32));
+  float32 *y_values = (float32 *) calloc(this->size.l, sizeof(float32));
+  
+  
+  for (k=0; k<this->size.s; k++) {
+      x_values[k] = space_def->ul_corner.x + (float32) (k*space_def->pixel_size);
+  }
+  
+  for (k=0; k<this->size.l; k++) {
+      y_values[k] = space_def->ul_corner.y - (float32) (k*space_def->pixel_size);
+  }
+
+  start[0] = 0;
+  nval[0] = this->size.s;
+  retval = nc_put_var_float(ncid, x_varid, x_values);
+  if (retval != 0) {
+      printf("retval: %d\n", retval);
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem writing values to coordinate variable", "OutputFile", (Output_t *)NULL);      
+  }
+  
+  start[0] = 0;
+  nval[0] = this->size.l;
+  retval = nc_put_var_float(ncid, y_varid, y_values);
+  if (retval != 0) {
+      free(this->sds.name);
+      free(this->file_name);
+      free(this);
+      LOG_RETURN_ERROR("Problem writing values to coordinate variable", "OutputFile", (Output_t *)NULL);      
+  }
 
   if (error_string != (char *)NULL) {
     free(this->sds.name);
