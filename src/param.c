@@ -188,7 +188,6 @@ Param_t *GetParam(int argc, const char **argv)
                           (Param_t *)NULL);
 
   /* set default parameters */
-  this->multires = false;
   this->input_file_name = (char *)NULL;
   this->output_file_name = (char *)NULL;
   this->geoloc_file_name = (char *)NULL;
@@ -467,10 +466,6 @@ Param_t *GetParam(int argc, const char **argv)
       LogInfomsg(msg);
       return (Param_t *)NULL; 
     }
-
-    /* Set multires to FALSE since the output product will have the same
-       resolution for all SDSs */
-    this->multires = false;
   }
 
   /* If not enough pixel sizes were provided, then fill the pixel sizes
@@ -487,13 +482,6 @@ Param_t *GetParam(int argc, const char **argv)
   /* Fill in the rest of the values with the saved pixel size value */
   for (; ip < this->num_input_sds; ip++) {
     this->output_pixel_size[ip] = tmp_pixel_size;
-  }
-
-  /* Check the user-specified pixel sizes to see if the output product
-     is multiple resolutions */
-  for (ip = 0; ip < this->num_input_sds; ip++) {
-    if (this->output_pixel_size[ip] != this->output_pixel_size[0])
-      this->multires = true;
   }
 
   /* If the UL or LR corner was not specified, then use full swath */
@@ -619,7 +607,6 @@ Param_t *CopyParam(Param_t *param)
   this->output_file_format = param->output_file_format;
   this->input_space_type = param->input_space_type;
   this->num_input_sds = param->num_input_sds;
-  this->multires = param->multires;
 
   for (ip = 0; ip < this->num_input_sds; ip++)
   {
