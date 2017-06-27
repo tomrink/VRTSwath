@@ -93,8 +93,6 @@ typedef enum {
 /* Parameter data structure type definition */
 
 typedef struct {
-  bool multires;           /* Did the user specify multiple resolutions for
-                              the output product? */
   char *input_file_name;   /* Name of the input image HDF file */
   char *productName;
   char *geoProductName;
