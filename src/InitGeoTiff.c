@@ -260,7 +260,7 @@ bool OpenGeoTIFFFile (Param_t *ParamList, GeoTIFFFD *MasterGeoMem)
   TIFFSetField( geotiff->tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG );
   TIFFSetField( geotiff->tif, TIFFTAG_SAMPLESPERPIXEL, 1 );
   TIFFSetField( geotiff->tif, TIFFTAG_ROWSPERSTRIP, 1L );
-  TIFFSetField( geotiff->tif, TIFFTAG_SOFTWARE, "MRTSwath" );
+  TIFFSetField( geotiff->tif, TIFFTAG_SOFTWARE, "VRTSwath" );
 
   /** Set the Output Datatype **/
   switch(ParamList->output_data_type)
