@@ -139,8 +139,6 @@
 #define NPATCH_MEM_MAX (60)  /* Maximum number of sets of patches in memory */
 #define MIN_WEIGHT (0.10)    /* Minimum weight for a valid output pixel */
 
-/* #define DEBUG_ZEROS */
-
 /* Functions */
 
 bool CreatePatches(Patches_t *this)
@@ -1250,40 +1248,6 @@ bool TossPatches(Patches_t *this, int32 output_data_type)
 
     /* Normalize each pixel in the patch and convert to output type */
 
-/* #define DEBUG2 */
-#ifdef DEBUG2
-    {
-      double v;
-
-      printf( "loc_p = loc[%d][%d]\n\n", il_patch, is_patch );
-      printf(" w  ");
-      for (is = 0; is < NSAMPLE_PATCH; is++) printf("%5d", is);
-      printf("\n");
-      for (il = 0; il < NLINE_PATCH; il++) {
-        printf("%2ld  ", (long)il);
-        for (is = 0; is < NSAMPLE_PATCH; is++)
-          printf(" %4.2f", (double)mem_p->weight[il][is]);
-        printf("\n");
-      }
-      printf("\n");
-
-      printf(" v  ");
-      for (is = 0; is < NSAMPLE_PATCH; is++) printf("%5d", is);
-      printf("\n");
-      for (il = 0; il < NLINE_PATCH; il++) {
-        printf("%2ld  ", (long)il);
-        for (is = 0; is < NSAMPLE_PATCH; is++) {
-          w = mem_p->weight[il][is];
-          v = (w > 0.0) ? (mem_p->sum[il][is] / w) : 0.0;
-  	  v *= 0.001;
-          printf(" %4.2f", (double)v);
-        }
-        printf("\n");
-      }
-      printf("\n");
-    }
-#endif
-
     /* are we dealing with the same data type for input and output? */
     same_data_type = (bool) (this->data_type == output_data_type);
 
@@ -1597,15 +1561,6 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
   bool same_data_type;
   double slope;
   int32 output_diff = 0, input_diff = 0;
-#ifdef DEBUG_ZEROS
-  int *zero_p;
-  int *zeros[3];
-  int *zero_chk;
-  int nzero;
-  int ib;
-  int il_print;
-  long nzero_tot;
-#endif
 
   /* Are we dealing with the same data type for input and output? */
 
@@ -1785,27 +1740,6 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
     default:
       LOG_RETURN_ERROR("invalid data type (a)", "UnscramblePatches", false);
   }
-#ifdef DEBUG_ZEROS
-  printf("checking for isolated zeros\n");
-  if (this->data_type != DFNT_INT16) 
-    ERROR("debuging only set up to handle INT16 data type",  
-          "UnscramblePatches");
-  zero_p = (int *)calloc((4 * output->size.s), sizeof(int));
-  if (zero_p == (int *)NULL) {
-    free(zero_p);
-    LOG_RETURN_ERROR("allocating zeros buffer", "UnscramblePatches", false);
-  }
-  zero_chk = zero_p;
-  for (is = 0; is < output->size.s; is++) zero_chk[is] = 1;
-  for (ib = 0; ib < 3; ib++) {
-    zero_p += output->size.s;
-    zeros[ib] = zero_p;
-    for (is = 0; is < output->size.s; is++) zeros[ib][is] = 3;
-    il_print = -1;
-  }
-  nzero_tot = 0;
-#endif
-
   /* For each output row of patches */
 
   for (il_patch = 0; il_patch < this->npatch.l; il_patch++) {
@@ -2375,8 +2309,6 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
       {
         uint16 zero = 0;
         GEOTIFF_WriteScanline( GeoTiffFile, buf.val_void[il_rel++], &il, &zero);
-        /* TIFFWriteScanline(GeoTiffFile->tif, buf.val_void[il_rel++], il, 0);
-         */
       }
 
       if(output_format == RB_FMT)
@@ -2384,38 +2316,6 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
         RBWriteScanLine(rbfile, output, il, buf.val_void[il_rel++]);
       }
     } /* for (il ... */
-
-#ifdef DEBUG_ZEROS
-    il_rel = 0;
-    if (il_print > 0) printf("\n");
-    il_print = -1;
-    for (il = il1; il < il2; il++) {
-      for (is = 0; is < output->size.s; is++) {
-	zeros[0][is] = zeros[1][is];
-	zeros[1][is] = zeros[2][is];
-	zeros[2][is] = 0;
-
-	if (buf.val_int16[il_rel][is] == fill_int16) zeros[2][is]++;
-	if (is <= 0) zeros[2][is]++;
-	else if (buf.val_int16[il_rel][is - 1] == fill_int16) zeros[2][is]++;
-	if (is >= (output->size.s - 1)) zeros[2][is]++;
-	else if (buf.val_int16[il_rel][is + 1] == fill_int16) zeros[2][is]++;
-
-        nzero = zeros[0][is] + zeros[1][is] + zeros[2][is];
-	if (nzero == 1  &&  zero_chk[is] > 0) {
-          nzero_tot++;
-	  if (il == il_print) printf(", %d", is);
-	  else {
-	    if (il_print > 0) printf("\n");
-  	    printf("zero: il %d  is: %d", (il - 1), is);
-	    il_print = il;
-	  }
-	}
-	zero_chk[is] = (buf.val_int16[il_rel][is] == fill_int16) ? 1 : 0;
-      }
-      il_rel++;
-    }
-#endif
 
   } /* for (il_patch ... */
 
