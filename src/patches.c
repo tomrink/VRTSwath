@@ -2311,19 +2311,10 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
         GEOTIFF_WriteScanline( GeoTiffFile, buf.val_void[il_rel++], &il, &zero);
       }
 
-      if(output_format == RB_FMT)
-      {
-        RBWriteScanLine(rbfile, output, il, buf.val_void[il_rel++]);
-      }
     } /* for (il ... */
 
   } /* for (il_patch ... */
 
-#ifdef DEBUG_ZEROS
-  if (il_print > 0) printf("\n");
-  printf("total number of zeros %d\n", nzero_tot);
-  free(zero_chk);
-#endif
 
   /* Free the buffer */
 
