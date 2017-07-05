@@ -308,6 +308,12 @@ bool OpenGeoTIFFFile (Param_t *ParamList, GeoTIFFFD *MasterGeoMem)
       TIFFSetField( geotiff->tif, TIFFTAG_SAMPLEFORMAT, 3 );
       break;
     }
+    case DFNT_FLOAT64:
+    {
+      TIFFSetField( geotiff->tif, TIFFTAG_BITSPERSAMPLE, 64 );
+      TIFFSetField( geotiff->tif, TIFFTAG_SAMPLEFORMAT, 3 );
+      break;
+    }    
     default:
     {
       sprintf(errstr, "error in output data type -- Unknown %d\n",
