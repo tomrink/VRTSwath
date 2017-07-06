@@ -149,12 +149,9 @@ typedef struct {
 
 int ConvertCorners(Param_t *param);
 Param_t *GetParam(int argc, const char **argv);
-Param_t *GetParamV(int argc, const char **argv);
 bool FreeParam(Param_t *param);
 int ReadSDS(Param_t *param);
 bool SDSInfo(Param_t *param);
-int ReadSDSV(Param_t *param);
-bool SDSInfoV(Param_t *param);
 Param_t *CopyParam(Param_t *param);
 void PrintParam(Param_t *param);
 

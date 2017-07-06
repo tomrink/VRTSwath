@@ -375,7 +375,7 @@ Param_t *GetParam(int argc, const char **argv)
   }
   else {
     /* Read the SDSs and determine the number of bands in each */
-    if (!SDSInfoV(this)) {
+    if (!SDSInfo(this)) {
       sprintf(msg, "resamp: error reading SDS information\n");
       LogInfomsg(msg);
       FreeParam(this);
@@ -693,7 +693,7 @@ bool FreeParam(Param_t *this)
   return true;
 }                            
 
-bool SDSInfoV(Param_t *this)
+bool SDSInfo(Param_t *this)
 /*
 !C******************************************************************************
 !Description: 'SDSInfo' accesses the specified SDSs in the input file and
