@@ -254,7 +254,7 @@ bool OpenGeoTIFFFile (Param_t *ParamList, GeoTIFFFD *MasterGeoMem)
   /** Set Length in Lines **/
   TIFFSetField(geotiff->tif,TIFFTAG_IMAGELENGTH,
     ParamList->output_space_def.img_size.l);  
-
+  
   TIFFSetField( geotiff->tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE );
   TIFFSetField( geotiff->tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK );
   TIFFSetField( geotiff->tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG );
