@@ -377,6 +377,12 @@ int main (int argc, const char **argv)
           case DFNT_INT32:
               LogInfomsg("INT32\n");
               break;
+          case DFNT_FLOAT32:
+              LogInfomsg("FLOAT32\n");
+              break;          
+          case DFNT_FLOAT64:
+              LogInfomsg("FLOAT64\n");
+              break;          
           default:
               LogInfomsg("same as input\n");
               break;
