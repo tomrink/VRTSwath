@@ -1120,8 +1120,6 @@ int CleanupLine(char* line)
 {
     size_t  i;
     size_t  j;
-    int     infile  = false;      /* is this the INPUT_FILENAME line?  */
-    int     outfile = false;      /* is this the OUTPUT_FILENAME line? */
     int     found;
     bool    done;
     char    tmpstr[LINE_BUFSIZ];
@@ -1141,16 +1139,6 @@ int CleanupLine(char* line)
     --------------------------------------------------*/
     capbuf = strdup( line );
     strupper(capbuf);
-
-    if ((strstr(capbuf, "INPUT_FILENAME")) != NULL)
-    {
-        infile = true;
-    }
-
-    if ((strstr(capbuf, "OUTPUT_FILENAME")) != NULL)
-    {
-        outfile = true;
-    }
 
     free(capbuf);
 
@@ -1819,7 +1807,8 @@ bool parse_sds_name(Param_t *this, char *sds_string)
   int nbands;            /* number of bands specified for the current SDS */
 
   /* check for an empty SDS list */
-  if (sds_string == NULL || sds_string == "")
+  //if (sds_string == NULL || sds_string == "")
+  if (sds_string == NULL || strcmp(sds_string,"") == 0)
   {
     this->num_input_sds = 0;
     return true;

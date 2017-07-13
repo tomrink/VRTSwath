@@ -224,8 +224,8 @@ int main (int argc, const char **argv)
   Output_t *output = NULL;
   Img_coord_double_t img;
   Geo_coord_t geo;
-  FILE_ID *MasterGeoMem;    /* Output GeoTiff file */
-  FILE *rbfile = NULL;       /* Output Raw Binary file */
+  FILE_ID *MasterGeoMem = NULL;    /* Output GeoTiff file */
+  FILE *rbfile = NULL;             /* Output Raw Binary file */
   char HDF_File[1024], CharThisPid[256], FinalFileName[1024];
   Output_t output_mem;       /* Contains output HDF file */
   int32 exec_resamp, ThisPid; 
@@ -583,7 +583,7 @@ int main (int argc, const char **argv)
          output data type). If NN kernel, then fill any holes left from the
          resampling process. */
       if (!UnscramblePatches(patches, output, param->output_file_format,
-          MasterGeoMem, rbfile, param->output_data_type, param->kernel_type))
+          MasterGeoMem, param->output_data_type, param->kernel_type))
         LOG_ERROR("unscrambling the output file", "main");
 
       /* Done with the patches */

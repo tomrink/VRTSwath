@@ -1468,7 +1468,7 @@ bool TossPatches(Patches_t *this, int32 output_data_type)
 
 bool UnscramblePatches(Patches_t *this, Output_t *output,
                        Output_file_format_t output_format,
-                       FILE_ID *GeoTiffFile, FILE *rbfile,
+                       FILE_ID *GeoTiffFile,
                        int32 output_data_type,
                        Kernel_type_t kernel_type)
 /* 
@@ -2274,17 +2274,15 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
        to fill those values in the output image. */
 
     // TDR, CC and BI seem to also leave holes. TODO: investigate.
-    //if(kernel_type == NN) 
-    //{
-/*
+    if(kernel_type == NN) 
+    {
       if (!FillOutput(buf.val_void, NLINE_PATCH, output->size.s,
           output_data_type, this->fill_value, slope, same_data_type))
       {
         LOG_RETURN_ERROR("filling gaps in output file", "UnscramblePatches",
           false);
       }
-*/
-    //}
+    }
 
     /* Write the lines to disk */
 

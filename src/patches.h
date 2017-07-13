@@ -154,7 +154,7 @@ bool UntouchPatches(Patches_t *this);
 bool TossPatches(Patches_t *this, int32 output_data_type);
 bool UnscramblePatches(Patches_t *this, Output_t *output,
      Output_file_format_t output_format, FILE_ID *GeoTiffFile,
-     FILE *rbfile, int32 output_data_type, Kernel_type_t kernel_type);
+     int32 output_data_type, Kernel_type_t kernel_type);
 bool FillOutput(void *void_buf[NLINE_PATCH], int nlines, int nsamps,
      int32 output_data_type, double fill_value, double slope,
      bool same_data_type);
