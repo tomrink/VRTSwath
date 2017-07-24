@@ -71,9 +71,28 @@
 
 #define CENTER_LON "longitude_of_projection_origin"
 #define CENTER_LAT "latitude_of_projection_origin"
+#define LON_CENTRAL_MER "longitude_of_central_meridian"
+#define LON_FROM_POLE "straight_vertical_longitude_from_pole"
+#define STANDARD_PARALLEL "standard_parallel"
+#define SCALE_FACTOR "scale_factor_at_projection_origin"
+#define SCALE_FACTOR_CEN_MER "scale_factor_at_central_meridian"
+#define NZONE "number of equally spaced latitudinal zones"
+#define RFLAG "right_justify_columns_flag"
 #define FALSE_EASTING "false_easting"
 #define FALSE_NORTHING "false_northing"
 #define LAMAZ "lambert_azimuthal_equal_area"
+#define LAMCC "lambert_conformal_conic"
+#define ALBERS "albers_conical_equal_area"
+#define MERCAT "mercator"
+#define STEREO "stereographic"
+#define PS "polar_stereographic"
+#define TM "tranverse_mercator"
+#define EQRECT "equidistant_cylindrical"
+#define SNSOID "sinusoidal"
+#define MOLL "mollweide"
+#define GOODE "interrupted_goode"
+#define HAMMER "hammer"
+#define ISINUS "interized_sinusoidal"
 
 #define GENERIC "generic"
 #define METER "meter"
@@ -175,6 +194,7 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   int dimid;
   int start[1];
   int nval[1];
+  int proj_num;
 
   /* Check parameters */
   
@@ -382,19 +402,100 @@ Output_t *OutputFile(char *file_name, char *sds_name,
       free(this);
       LOG_RETURN_ERROR("Problem creating projection variable", "OutputFile", (Output_t *)NULL);
   }
+  
+  proj_num = space_def->proj_num;
 
   float32 false_easting = 0.0;
   float32 false_northing = 0.0;
   float32 center_lon = space_def->orig_proj_param[4];
   float32 center_lat = space_def->orig_proj_param[5];
+  float32 stnd_parallel_1;
+  float32 stnd_parallel_2;
+  float32 stnd_parallels[2];
+  float32 scale_factor;
+  
+  if (proj_num == PROJ_LAMCC) {
+      stnd_parallel_1 = space_def->orig_proj_param[2];
+      stnd_parallel_2 = space_def->orig_proj_param[3];
+      stnd_parallels[0] = stnd_parallel_1;
+      stnd_parallels[1] = stnd_parallel_2;
+      
+      retval = nc_put_att_float(ncid, proj_varid, STANDARD_PARALLEL, NC_FLOAT, 2, stnd_parallels);
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(LAMCC), LAMCC);
+      retval = nc_put_att_float(ncid, proj_varid, LON_CENTRAL_MER, NC_FLOAT, 1, &center_lon);
+      retval = nc_put_att_float(ncid, proj_varid, CENTER_LAT, NC_FLOAT, 1, &center_lat);
+  }
+  else if (proj_num == PROJ_LAMAZ) {
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(LAMAZ), LAMAZ);
+      retval = nc_put_att_float(ncid, proj_varid, CENTER_LON, NC_FLOAT, 1, &center_lon);
+      retval = nc_put_att_float(ncid, proj_varid, CENTER_LAT, NC_FLOAT, 1, &center_lat);      
+  }
+  else if (proj_num == PROJ_ALBERS) {
+      stnd_parallel_1 = space_def->orig_proj_param[2];
+      stnd_parallel_2 = space_def->orig_proj_param[3];
+      stnd_parallels[0] = stnd_parallel_1;
+      stnd_parallels[1] = stnd_parallel_2;
+      
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(ALBERS), ALBERS);
+      retval = nc_put_att_float(ncid, proj_varid, STANDARD_PARALLEL, NC_FLOAT, 2, stnd_parallels);
+      retval = nc_put_att_float(ncid, proj_varid, LON_CENTRAL_MER, NC_FLOAT, 1, &center_lon);
+      retval = nc_put_att_float(ncid, proj_varid, CENTER_LAT, NC_FLOAT, 1, &center_lat);          
+  }
+  else if (proj_num == PROJ_MERCAT) {
+      center_lon   = space_def->orig_proj_param[4];
+      scale_factor = space_def->orig_proj_param[5];
+      
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(MERCAT), MERCAT); 
+      retval = nc_put_att_float(ncid, proj_varid, CENTER_LON, NC_FLOAT, 1, &center_lon);
+      retval = nc_put_att_float(ncid, proj_varid, SCALE_FACTOR, NC_FLOAT, 1, &scale_factor);
+  }
+  else if (proj_num == PROJ_STEREO) {
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(STEREO), STEREO);
+      retval = nc_put_att_float(ncid, proj_varid, CENTER_LON, NC_FLOAT, 1, &center_lon);
+      retval = nc_put_att_float(ncid, proj_varid, CENTER_LAT, NC_FLOAT, 1, &center_lat);           
+  }
+  else if (proj_num == PROJ_PS) {
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(PS), PS);
+      retval = nc_put_att_float(ncid, proj_varid, LON_FROM_POLE, NC_FLOAT, 1, &center_lon);
+      retval = nc_put_att_float(ncid, proj_varid, CENTER_LAT, NC_FLOAT, 1, &center_lat);              
+  }
+  else if (proj_num == PROJ_TM) {
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(TM), TM);
+      retval = nc_put_att_float(ncid, proj_varid, LON_CENTRAL_MER, NC_FLOAT, 1, &center_lon);
+      retval = nc_put_att_float(ncid, proj_varid, CENTER_LAT, NC_FLOAT, 1, &center_lat);
+  }
+  else if (proj_num == PROJ_EQRECT) {
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(EQRECT), EQRECT);      
+      retval = nc_put_att_float(ncid, proj_varid, LON_CENTRAL_MER, NC_FLOAT, 1, &center_lon);
+      retval = nc_put_att_float(ncid, proj_varid, CENTER_LAT, NC_FLOAT, 1, &center_lat);               
+  }
+  else if (proj_num == PROJ_SNSOID) {
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(SNSOID), SNSOID);      
+      retval = nc_put_att_float(ncid, proj_varid, LON_CENTRAL_MER, NC_FLOAT, 1, &center_lon);
+  }
+  else if (proj_num == PROJ_MOLL) {
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(MOLL), MOLL);      
+      retval = nc_put_att_float(ncid, proj_varid, LON_CENTRAL_MER, NC_FLOAT, 1, &center_lon);
+  }
+  else if (proj_num == PROJ_GOODE) {
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(GOODE), GOODE);
+  }
+  else if (proj_num == PROJ_HAMMER) {
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(HAMMER), HAMMER);      
+      retval = nc_put_att_float(ncid, proj_varid, LON_CENTRAL_MER, NC_FLOAT, 1, &center_lon);
+  }
+  else if (proj_num == PROJ_ISINUS) {
+      int32 nzone = (int32) space_def->orig_proj_param[8];
+      int32 rflag = (int32) space_def->orig_proj_param[10];      
+      retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(ISINUS), ISINUS);      
+      retval = nc_put_att_float(ncid, proj_varid, LON_CENTRAL_MER, NC_FLOAT, 1, &center_lon);
+      retval = nc_put_att_int(ncid, proj_varid, NZONE, NC_INT, 1, &nzone);
+      retval = nc_put_att_int(ncid, proj_varid, RFLAG, NC_INT, 1, &rflag);
+  }
+  
   
   retval = nc_put_att_float(ncid, proj_varid, FALSE_EASTING, NC_FLOAT, 1, &false_easting);
   retval = nc_put_att_float(ncid, proj_varid, FALSE_NORTHING, NC_FLOAT, 1, &false_northing);
-  retval = nc_put_att_text(ncid, proj_varid, GRID_MAPPING_NAME, strlen(LAMAZ), LAMAZ);
-  retval = nc_put_att_float(ncid, proj_varid, CENTER_LON, NC_FLOAT, 1, &center_lon);
-  retval = nc_put_att_float(ncid, proj_varid, CENTER_LAT, NC_FLOAT, 1, &center_lat);
-  
-  
   
   /* Conventions global attribute */
   retval = nc_put_att_text(ncid, NC_GLOBAL, CONVENTIONS, strlen(CF_1_7), CF_1_7);
@@ -420,7 +521,6 @@ Output_t *OutputFile(char *file_name, char *sds_name,
   nval[0] = this->size.s;
   retval = nc_put_var_float(ncid, x_varid, x_values);
   if (retval != 0) {
-      printf("retval: %d\n", retval);
       free(this->sds.name);
       free(this->file_name);
       free(this);
