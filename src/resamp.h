@@ -41,8 +41,8 @@
 #ifndef RESAMP_H
 #define RESAMP_H
 
-#define RESAMPLER_NAME    "MODIS Reprojection Tool Swath"
-#define RESAMPLER_VERSION "v2.2 September 2010"
+#define RESAMPLER_NAME    "VIIRS Reprojection Tool Swath"
+#define RESAMPLER_VERSION "v1.0 October 2017"
 
 #include "bool.h"
 #include "common.h"
