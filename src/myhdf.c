@@ -143,6 +143,8 @@ bool GetSingleValueAttrAsDouble(hid_t dataset, char *attrName, double *dblVal) {
     short shortValue;
     float floatValue;
     double doubleValue;
+    signed char sbyteValue;
+    unsigned char ubyteValue;
     
     attr = H5Aopen(dataset, attrName, H5P_DEFAULT);
     attrType = H5Aget_type (attr);
@@ -192,6 +194,20 @@ bool GetSingleValueAttrAsDouble(hid_t dataset, char *attrName, double *dblVal) {
             LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);            
         }
         dblVal[0] = doubleValue;
+    }
+    else if (nativeType == H5T_NATIVE_SCHAR) {
+        status = H5Aread(attr, nativeType, &sbyteValue);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);            
+        }
+        dblVal[0] = (double) sbyteValue;
+    }
+    else if (nativeType == H5T_NATIVE_UCHAR) {
+        status = H5Aread(attr, nativeType, &ubyteValue);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);            
+        }
+        dblVal[0] = (double) ubyteValue;
     }
                 
 
