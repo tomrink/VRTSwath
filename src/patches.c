@@ -2276,12 +2276,14 @@ bool UnscramblePatches(Patches_t *this, Output_t *output,
     // TDR, CC and BI seem to also leave holes. TODO: investigate.
     if(kernel_type == NN) 
     {
+/*
       if (!FillOutput(buf.val_void, NLINE_PATCH, output->size.s,
           output_data_type, this->fill_value, slope, same_data_type))
       {
         LOG_RETURN_ERROR("filling gaps in output file", "UnscramblePatches",
           false);
       }
+*/
     }
 
     /* Write the lines to disk */
