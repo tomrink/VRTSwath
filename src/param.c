@@ -124,11 +124,11 @@ extern Proj_sphere_t Proj_sphere[PROJ_NSPHERE];
 extern Proj_type_t Proj_type[PROJ_NPROJ];
 
 char *productNotDetermined = "ProductNotDetermined";
-int numProducts = 2;
-char *productNames[] = {"VL1BM", "VL1BI"};
-char *geoProductNames[] = {"VGEOM", "VGEOI"};
-float pixelResolution[] = {780.0, 390.0};
-int NDETinScan[] = {16, 32};
+int numProducts = 11;
+char *productNames[] = {"VL1BM", "VL1BI", "VNP02MOD", "VNP02DNB", "VNP02IMG", "VJ102MOD", "VJ102DNB", "VJ102IMG", "VJ202MOD", "VJ202DNB", "VJ202IMG"};
+char *geoProductNames[] = {"VGEOM", "VGEOI", "VNP03MOD", "VNP03DNB", "VNP03IMG", "VJ103MOD", "VJ103DNB", "VJ103IMG", "VJ203MOD", "VJ203DNB", "VJ203IMG"};
+float pixelResolution[] = {780.0, 390.0, 780.0, 780.0, 390.0, 780.0, 780.0, 390.0, 780.0, 780.0, 390.0};
+int NDETinScan[] = {16, 32, 16, 16, 32, 16, 16, 32, 16, 16, 32};
 
 /* Functions */
 
@@ -286,14 +286,16 @@ Param_t *GetParam(int argc, const char **argv)
   }
   
   char *productName = getVIIRSproductNameFromFilename(getFilenameFromPath(this->input_file_name, '/'));
-  if (productName == NULL) {
+  //if (productName == NULL) {
+  if (strcmp(productName, productNotDetermined) == 0) {
       sprintf(msg, "can't determine productName from input filename: %s \n", this->input_file_name);
       LogInfomsg(msg);
   }
   this->productName = productName;
   
   char *geoProductName = getVIIRSgeoProductNameFromFilename(getFilenameFromPath(this->geoloc_file_name, '/'));
-  if (geoProductName == NULL) {
+  //if (geoProductName == NULL) {
+  if (strcmp(geoProductName, productNotDetermined) == 0) {
       sprintf(msg, "can't determine GEO product from input filename: %s \n", this->geoloc_file_name);
       LogInfomsg(msg);
       FreeParam(this);
@@ -931,7 +933,7 @@ char *getVIIRSproductNameFromFilename(char *filename) {
 
 char *getVIIRSgeoProductNameFromFilename(char *filename) {
     int k;
-    for (k=0; k<2; k++) {
+    for (k=0; k<numProducts; k++) {
         char *name = geoProductNames[k];
         if (strstr(filename, name) != NULL) {
             return name;
@@ -944,18 +946,18 @@ float getVIIRSpixelResolutionFromGeoProductName(char *name) {
     int k;
     int idx = -1;
     
-    for (k=0; k<2; k++) {
+    for (k=0; k<numProducts; k++) {
         if (strcmp(geoProductNames[k], name) == 0) {
             idx = k;
             break;
         }
     }
     
-    if (idx >= 0 && idx < 2) {
+    if (idx >= 0 && idx < numProducts) {
         return pixelResolution[idx];
     }
     else {
-        return 0.0;
+        return 5000.0;
     }
 }
 
@@ -963,17 +965,17 @@ int getNDETinScanFromGeoProductName(char *name) {
     int k;
     int idx = -1;
     
-    for (k=0; k<2; k++) {
+    for (k=0; k<numProducts; k++) {
         if (strcmp(geoProductNames[k], name) == 0) {
             idx = k;
             break;
         }
     }
     
-    if (idx >= 0 && idx < 2) {
+    if (idx >= 0 && idx < numProducts) {
         return NDETinScan[idx];
     }
     else {
-        return 0.0;
+        return 1.0;
     }
 }
