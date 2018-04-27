@@ -42,7 +42,7 @@
 #define RESAMP_H
 
 #define RESAMPLER_NAME    "VIIRS Reprojection Tool Swath"
-#define RESAMPLER_VERSION "v1.0 October 2017"
+#define RESAMPLER_VERSION "v1.2 March 2018"
 
 #include "bool.h"
 #include "common.h"
