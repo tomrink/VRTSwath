@@ -78,13 +78,6 @@
 #define GEOLOC_LAT_SDS "geolocation_data/latitude"
 #define GEOLOC_LON_SDS "geolocation_data/longitude"
 
-/*
-Img_coord_double_t band_offset_gen[NBAND_OFFSET_GEN] = {
-  {0.0, 0.0, false}, {0.0, 0.0, false}, {0.0, 0.0, false}, {0.0, 0.0, false}, 
-  {0.0, 0.0, false}, {0.0, 0.0, false}, {0.0, 0.0, false}, {0.0, 0.0, false},
-  {0.0, 0.0, false}, {0.0, 0.0, false}, {0.0, 0.0, false} 
-};
-*/
 
 
 Geoloc_t *OpenGeolocSwath(char *file_name)
@@ -220,19 +213,6 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
       }
     }
 
-    /* Get fill value, TDR, eventually need HDF5 stuff here
-
-    if (error_string == (char *)NULL) {
-      attr.name = FILL_ATTR_NAME;
-      if (!GetAttrDouble(sds->id, &attr, fill))
-        error_string = "getting fill value";
-      else {
-        if (i == 1) this->lat_fill = (float32)fill[0];
-        else this->lon_fill = (float32)fill[0];
-      }
-    }
-    */
-    
     if (error_string != (char *)NULL) {
       if (i > 0) {
         sds = &this->sds_lat;
