@@ -145,6 +145,13 @@ bool GetSingleValueAttrAsDouble(hid_t dataset, char *attrName, double *dblVal) {
     double doubleValue;
     signed char sbyteValue;
     unsigned char ubyteValue;
+    char msg[256];
+    
+    if (!(H5Aexists(dataset, attrName))) {
+        sprintf(msg, "no attribute %s \n", attrName);
+	LogInfomsg(msg);
+        return false;
+    }
     
     attr = H5Aopen(dataset, attrName, H5P_DEFAULT);
     attrType = H5Aget_type (attr);
