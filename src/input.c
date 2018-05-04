@@ -82,6 +82,7 @@
 #define FILL_VALUE_NAME "_FillValue"
 #define VALID_MIN_NAME "valid_min"
 #define VALID_MAX_NAME "valid_max"
+#define VALID_RANGE_NAME "valid_range"
 
 
 Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int iband, int rank,
@@ -169,6 +170,7 @@ Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int ib
     strcpy (errstr, "OpenInput: allocating Input data structure");
     return (Input_t *)NULL;
   }
+  this->iband = 0;
 
   /* Populate the data structure */
 
@@ -261,10 +263,18 @@ Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int ib
           this->hasValidRange = true;
       }
   }
-  
+  else { // check for valid_range attribute
+      int len[1];
+      double *attrArray[1];
+      if (GetAttrArrayAsDouble(this->sds.id, VALID_RANGE_NAME, len, attrArray)) {
+          this->valid_min = ((double *)attrArray[0])[0];
+          this->valid_max = ((double *)attrArray[0])[1];
+          this->hasValidRange = true;
+      }
+  }
   if (this->hasValidRange) {
       printf("Dataset valid range: %f, %f\n", this->valid_min, this->valid_max);
-  }
+  }  
   
   /* Get fill value or use 0.0 as the fill */
   this->fill_value = 0.0;
@@ -284,6 +294,8 @@ Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int ib
   this->scan_size.l *= this->ires;
   this->scan_size.s = this->size.s;
   this->nscan = (this->size.l - 1) / this->scan_size.l + 1;
+  /* 
+   * Allow non integral number of scans until further notice
   if ((this->nscan * this->scan_size.l) != this->size.l) {
     for (ir1 = 0; ir1 < ir; ir1++) free(this->sds.dim[ir1].name);
     free(this->sds.name);
@@ -292,6 +304,8 @@ Input_t *OpenInput(char *file_name, char *geoProductName, char *sds_name, int ib
     strcpy (errstr, "OpenInput: not an integral number of scans");
     return (Input_t *)NULL;
   }
+  * 
+  */
 
   /* Allocate input buffer */
   
