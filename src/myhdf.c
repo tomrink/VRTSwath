@@ -221,6 +221,125 @@ bool GetSingleValueAttrAsDouble(hid_t dataset, char *attrName, double *dblVal) {
     return true;
 }
 
+bool GetAttrArrayAsDouble(hid_t dataset, char *attrName, int *arrayLen, double **dblArray)
+{
+    hid_t attr, attrType, nativeType;
+    herr_t status;
+    H5A_info_t ainfo;
+    
+    int i;
+    char msg[256];
+    size_t size;
+    double *dblVal;
+    
+    void *attrValues;
+    
+    if (!(H5Aexists(dataset, attrName))) {
+        snprintf(msg, 256, "no attribute %s \n", attrName);
+	LogInfomsg(msg);
+        return false;
+    }
+       
+    attr = H5Aopen(dataset, attrName, H5P_DEFAULT);
+    
+    status = H5Aget_info(attr, &ainfo);
+    if (status < 0) {
+        LOG_RETURN_ERROR(" ", "GetArrayAttrAsDouble", false);
+    }
+    attrValues = malloc(ainfo.data_size);
+    
+    attrType = H5Aget_type (attr);
+    size = H5Tget_size(attrType);
+    int numVals = ainfo.data_size/size;
+    arrayLen[0] = numVals;
+    dblVal = (double *) malloc(ainfo.data_size);
+    
+    nativeType = getNativeType(attrType);
+    
+    if (nativeType == H5I_INVALID_HID) {
+        LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
+    }
+    
+    if (nativeType == H5T_NATIVE_UINT) {
+        status = H5Aread(attr, nativeType, attrValues);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
+        }
+        for (i=0; i<numVals; i++) {
+            dblVal[i] = (double) ((unsigned int *)attrValues)[i];
+        }
+    }
+    else if (nativeType == H5T_NATIVE_INT) {
+        status = H5Aread(attr, nativeType, attrValues);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
+        }
+        for (i=0; i<numVals; i++) {
+            dblVal[i] = (double) ((int *)attrValues)[i];
+        }        
+    }
+    else if (nativeType == H5T_NATIVE_USHORT) {
+        status = H5Aread(attr, nativeType, attrValues);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
+        }
+        for (i=0; i<numVals; i++) {
+            dblVal[i] = (double) ((unsigned short *)attrValues)[i];
+        }
+    }
+    else if (nativeType == H5T_NATIVE_SHORT) {
+        status = H5Aread(attr, nativeType, attrValues);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);
+        }
+        for (i=0; i<numVals; i++) {
+            dblVal[i] = (double) ((short *)attrValues)[i];
+        }        
+    }    
+    else if (nativeType == H5T_NATIVE_FLOAT) {
+        status = H5Aread(attr, nativeType, attrValues);
+        if (status < 0) {
+             LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);           
+        }
+        for (i=0; i<numVals; i++) {
+            dblVal[i] = (double) ((float *)attrValues)[i];
+        }        
+    }
+    else if (nativeType == H5T_NATIVE_DOUBLE) {
+        status = H5Aread(attr, nativeType, attrValues);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);            
+        }
+        for (i=0; i<numVals; i++) {
+            dblVal[i] = (double) ((double *)attrValues)[i];
+        }        
+    }
+    else if (nativeType == H5T_NATIVE_SCHAR) {
+        status = H5Aread(attr, nativeType, attrValues);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);            
+        }
+        for (i=0; i<numVals; i++) {
+            dblVal[i] = (double) ((signed char *)attrValues)[i];
+        }        
+    }
+    else if (nativeType == H5T_NATIVE_UCHAR) {
+        status = H5Aread(attr, nativeType, attrValues);
+        if (status < 0) {
+            LOG_RETURN_ERROR(" ", "GetSingleValueAttrAsDouble", false);            
+        }
+        for (i=0; i<numVals; i++) {
+            dblVal[i] = (double) ((unsigned char *)attrValues)[i];
+        }        
+    }
+    
+    *dblArray = dblVal;
+      
+    free(attrValues);
+
+    return true;    
+}
+
 bool DetermineResolution(Myhdf_sds_t *sds, Img_coord_int_t *ls_dim, int *ires)
 /*
 !C*****************************************************************************
