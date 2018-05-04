@@ -86,6 +86,7 @@ bool PutSDSInfo(int32 sds_file_id, Myhdf_sds_t *sds);
 bool PutSDSDimInfo(int32 sds_id, Myhdf_dim_t *dim, int irank);
 bool GetAttrDouble(int32 sds_id, Myhdf_attr_t *attr, double *val);
 bool GetSingleValueAttrAsDouble(hid_t dataset, char *attrName, double *value); // ?
+bool GetAttrArrayAsDouble(hid_t dataset, char *attrName, int *len, double **value);
 bool ReadBoundCoords(char *infile, Geo_coord_t *ul_corner,
      Geo_coord_t *lr_corner);
 bool ReadMetadata(int32 sd_id, char *attr, double bound_coords[],
