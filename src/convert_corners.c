@@ -121,11 +121,12 @@ int ConvertCorners(Param_t *param)
     int del_line = lr_line - ul_line;
     int del_samp = lr_samp - ul_samp;
     
-    /* Open geoloc file */
-    geoloc = OpenGeolocSwath(param->geoloc_file_name);
+    geoloc = OpenGeolocSwath(param, (Input_t *)NULL);
+    
     if (geoloc == (Geoloc_t *)NULL)
       LOG_RETURN_ERROR("bad geolocation file", "ConvertCorners", false);
 
+    
     /* Grab the UL to UR longitude (0-based start values) */
     start[0] = ul_line;
     start[1] = ul_samp;

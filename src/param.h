@@ -143,6 +143,9 @@ typedef struct {
   double user_background_fill;
   bool has_user_background_fill;
   
+  char *input_sds_lat_name;
+  char *input_sds_lon_name;
+  
 } Param_t;
 
 /* Prototypes */
@@ -159,5 +162,7 @@ char *getVIIRSproductNameFromFilename(char *filename);
 char *getVIIRSgeoProductNameFromFilename(char *filename);
 float getVIIRSpixelResolutionFromGeoProductName(char *productName);
 int getNDETinScanFromGeoProductName(char *productName);
+char *getLonSDSNameFromGeoProductName(char *productName);
+char *getLatSDSNameFromGeoProductName(char *productName);
 
 #endif

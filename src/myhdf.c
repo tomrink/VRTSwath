@@ -382,10 +382,7 @@ bool DetermineResolution(Myhdf_sds_t *sds, Img_coord_int_t *ls_dim, int *ires)
   return true;
 }
 
-
-bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds, 
-  char *geoProductName, int out_proj_num,
-  double output_pixel_size[MAX_SDS_DIMS])
+bool DeterminePixelSizeV(Param_t *param, char *geoProductName)
 /*
 !C*****************************************************************************
 !Description: 'DeterminePixelSize' uses the ires values (calculated by
@@ -420,6 +417,12 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
   int32 nval[MYHDF_MAX_RANK];          /* read this many values */
   double center = 0.0;                 /* longitude value at the center */
   double centerp1 = 0.0;               /* longitude value at the center+1 */
+  int out_proj_num;
+  int num_input_sds;
+  
+  out_proj_num = param->output_space_def.proj_num;
+  num_input_sds = param->num_input_sds;
+  
 
   /* If dealing with an output projection of Geographic, then read the
      center pixel values from the Geolocation file for use later in the
@@ -427,7 +430,7 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
   if (out_proj_num == PROJ_GEO)
   {
       /* Open geoloc file */
-      geoloc = OpenGeolocSwath(geoloc_file_name);
+      geoloc = OpenGeolocSwath(param, (Input_t *)NULL);
       if (geoloc == (Geoloc_t *)NULL)
         LOG_RETURN_ERROR("bad geolocation file", "DeterminePixelSize",
                               false);
@@ -468,7 +471,7 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
        size is in meters */
     if (out_proj_num != PROJ_GEO)
     {
-        output_pixel_size[i] = (double) pixelSize;
+        param->output_pixel_size[i] = (double) pixelSize;
     }
     /* If the output projection is Geographic, then we need to read the
        Geolocation file */
@@ -476,10 +479,10 @@ bool DeterminePixelSizeV(char *geoloc_file_name, int num_input_sds,
     {
        double posDiff = fabs(centerp1 - center);
        if (posDiff > 180) {
-           output_pixel_size[i] = 360 - posDiff;
+           param->output_pixel_size[i] = 360 - posDiff;
        }
        else {
-           output_pixel_size[i] = posDiff;
+           param->output_pixel_size[i] = posDiff;
        }
     }
   }

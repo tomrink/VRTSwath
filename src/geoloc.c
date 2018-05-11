@@ -73,14 +73,8 @@
 #include "hdf5.h"
 #include "resamp.h"
 
-/* Constants */
 
-#define GEOLOC_LAT_SDS "geolocation_data/latitude"
-#define GEOLOC_LON_SDS "geolocation_data/longitude"
-
-
-
-Geoloc_t *OpenGeolocSwath(char *file_name)
+Geoloc_t *OpenGeolocSwath(Param_t *param, Input_t *input)
 /* 
 !C******************************************************************************
 
@@ -137,15 +131,20 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
   /* Populate the data structure */
 
   this->geoloc_type = SWATH_GEOLOC;
+  
+  this->geoFileIsInputFile = false;
+  if (strcmp(param->geoloc_file_name, param->input_file_name) == 0) {
+      this->geoFileIsInputFile = true;
+  }
 
-  this->file_name = DupString(file_name);
+  this->file_name = DupString(param->geoloc_file_name);
   if (this->file_name == (char *)NULL) {
     free(this);
     LOG_RETURN_ERROR("duplicating file name", "OpenGeolocSwath",
                           (Geoloc_t *)NULL);
   }
 
-  this->sds_lat.name = DupString(GEOLOC_LAT_SDS);
+  this->sds_lat.name = DupString(param->input_sds_lat_name);
   if (this->sds_lat.name == (char *)NULL) {
     free(this->file_name);
     free(this);
@@ -153,7 +152,7 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
                           (Geoloc_t *)NULL);
   }
 
-  this->sds_lon.name = DupString(GEOLOC_LON_SDS);
+  this->sds_lon.name = DupString(param->input_sds_lon_name);
   if (this->sds_lon.name == (char *)NULL) {
     free(this->sds_lat.name);
     free(this->file_name);
@@ -162,21 +161,22 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
                           (Geoloc_t *)NULL);
   }
 
-  /* Set up the band offsets */
-
-  
-  /* Open file for SD access */
-
-  this->sds_file_id = H5Fopen(file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
-  if (this->sds_file_id == HDF_ERROR) {
-    free(this->sds_lat.name);
-    free(this->sds_lon.name);
-    free(this->file_name);
-    free(this);  
-    LOG_RETURN_ERROR("opening geolocation file", "OpenGeolocSwath", 
-                 (Geoloc_t *)NULL); 
+  if (!this->geoFileIsInputFile || (input == (Input_t *)NULL)) {
+      this->sds_file_id = H5Fopen(this->file_name, H5F_ACC_RDONLY, H5P_DEFAULT);
+      if (this->sds_file_id == HDF_ERROR) {
+        free(this->sds_lat.name);
+        free(this->sds_lon.name);
+        free(this->file_name);
+        free(this);  
+        LOG_RETURN_ERROR("opening geolocation file", "OpenGeolocSwath", 
+                     (Geoloc_t *)NULL); 
+      }
+      this->open = true;
   }
-  this->open = true;
+  else if (input != (Input_t *)NULL) {
+      this->sds_file_id = input->sds_file_id;
+      this->open = true;
+  }
 
   /* Open the latitude and longitude SDSs */
 
@@ -186,7 +186,9 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
     /* Get SDS information and start SDS access */
 
     if (!GetSDSInfoV(this->sds_file_id, sds)) {
-      H5Fclose(this->sds_file_id);
+      if (!this->geoFileIsInputFile) {
+         H5Fclose(this->sds_file_id);
+      }
       free(this->sds_lat.name);
       free(this->sds_lon.name);
       free(this->file_name);
@@ -218,7 +220,9 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
         sds = &this->sds_lat;
         for (ir = 0; ir < sds->rank; ir++) free(sds->dim[ir].name);
       }
-      H5Fclose(this->sds_file_id);      
+      if (!this->geoFileIsInputFile) {
+         H5Fclose(this->sds_file_id);
+      }      
       free(this->sds_lat.name);
       free(this->sds_lon.name);
       free(this->file_name);
@@ -240,12 +244,14 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
   this->size.s = this->sds_lat.dim[1].nval;
   this->nscan = this->size.l / this->scan_size.l;
 
+  /*
   if ((this->nscan * this->scan_size.l) != this->size.l) 
     error_string = "not an integral number of scans";
   else if (this->size.l != this->sds_lon.dim[0].nval)
     error_string = "number of lines don't match";
   else if (this->size.s != this->sds_lon.dim[1].nval)
     error_string = "number of samples don't match";
+  */
 
   /* Allocate buffers */
 
@@ -298,7 +304,9 @@ Geoloc_t *OpenGeolocSwath(char *file_name)
       sds = (i == 1) ? &this->sds_lat : &this->sds_lon;
       for (ir = 0; ir < sds->rank; ir++) free(sds->dim[ir].name);
     }
-    H5Fclose(this->sds_file_id);
+    if (!this->geoFileIsInputFile) {
+       H5Fclose(this->sds_file_id);
+    }    
     free(this->sds_lat.name);
     free(this->sds_lon.name);
     free(this->file_name);
@@ -542,8 +550,10 @@ bool CloseGeoloc(Geoloc_t *this)
     H5Dclose(sds->id);
   }
 
-  H5Fclose(this->sds_file_id);
-  this->open = false;
+  if (!this->geoFileIsInputFile) {
+     H5Fclose(this->sds_file_id);
+     this->open = false;
+  }
 
   return true;
 }

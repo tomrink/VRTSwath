@@ -89,11 +89,12 @@ typedef struct {
   float32 *lat_buf;
   float32 *lon_buf;
   Geo_coord_t **geo_isin_nest[SPACE_MAX_NEST];
+  bool geoFileIsInputFile;
 } Geoloc_t;
 
 /* Prototypes */
 
-Geoloc_t *OpenGeolocSwath(char *file_name);
+Geoloc_t *OpenGeolocSwath(Param_t *param, Input_t *input);
 Geoloc_t *SetupGeolocGrid(Space_def_t *space, Input_t *input, 
                           Kernel_t *kernel);
 bool CloseGeoloc(Geoloc_t *this);

@@ -1,6 +1,7 @@
 
 CC = gcc
 CFLAGS = -O3 -Wall -W -Wno-switch -g
+#Debug: CFLAGS = -O0 -Wall -W -Wno-switch -g
 LDFLAGS = $(HDF5LIB) $(NETCDF4LIB) $(GEOLIB) $(TIFFLIB) -g -lsz -lz -ldl -lm -lcurl -Wl,-rpath,/home/rink/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared/lib
 MV = mv
 CP = cp

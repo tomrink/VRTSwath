@@ -322,7 +322,7 @@ int main (int argc, const char **argv)
         LOG_ERROR("generating kernel", "main");
 
       /* Open geoloc file */
-      geoloc = OpenGeolocSwath(param->geoloc_file_name);
+      geoloc = OpenGeolocSwath(param, input);
       if (geoloc == (Geoloc_t *)NULL)
         LOG_ERROR("bad geolocation file", "main");
 

@@ -124,11 +124,19 @@ extern Proj_sphere_t Proj_sphere[PROJ_NSPHERE];
 extern Proj_type_t Proj_type[PROJ_NPROJ];
 
 char *productNotDetermined = "ProductNotDetermined";
-int numProducts = 11;
-char *productNames[] = {"VL1BM", "VL1BI", "VNP02MOD", "VNP02DNB", "VNP02IMG", "VJ102MOD", "VJ102DNB", "VJ102IMG", "VJ202MOD", "VJ202DNB", "VJ202IMG"};
-char *geoProductNames[] = {"VGEOM", "VGEOI", "VNP03MOD", "VNP03DNB", "VNP03IMG", "VJ103MOD", "VJ103DNB", "VJ103IMG", "VJ203MOD", "VJ203DNB", "VJ203IMG"};
-float pixelResolution[] = {780.0, 390.0, 780.0, 780.0, 390.0, 780.0, 780.0, 390.0, 780.0, 780.0, 390.0};
-int NDETinScan[] = {16, 32, 16, 16, 32, 16, 16, 32, 16, 16, 32};
+int numProducts = 12;
+char *productNames[] = {"VL1BM", "VL1BI", "VNP02MOD", "VNP02DNB", "VNP02IMG", "VJ102MOD", "VJ102DNB", "VJ102IMG", "VJ202MOD", "VJ202DNB", "VJ202IMG", "VNPAERDB"};
+char *geoProductNames[] = {"VGEOM", "VGEOI", "VNP03MOD", "VNP03DNB", "VNP03IMG", "VJ103MOD", "VJ103DNB", "VJ103IMG", "VJ203MOD", "VJ203DNB", "VJ203IMG", "VNPAERDB"};
+float pixelResolution[] = {780.0, 390.0, 780.0, 780.0, 390.0, 780.0, 780.0, 390.0, 780.0, 780.0, 390.0, 5000.0};
+int NDETinScan[] = {16, 32, 16, 16, 32, 16, 16, 32, 16, 16, 32, 8};
+
+char *latitudePathNames[] = {"geolocation_data/latitude","geolocation_data/latitude","geolocation_data/latitude","geolocation_data/latitude","geolocation_data/latitude",
+"geolocation_data/latitude","geolocation_data/latitude","geolocation_data/latitude","geolocation_data/latitude","geolocation_data/latitude","geolocation_data/latitude",
+"Latitude"};
+
+char *longitudePathNames[] = {"geolocation_data/longitude","geolocation_data/longitude","geolocation_data/longitude","geolocation_data/longitude","geolocation_data/longitude",
+"geolocation_data/longitude","geolocation_data/longitude","geolocation_data/longitude","geolocation_data/longitude","geolocation_data/longitude","geolocation_data/longitude",
+"Longitude"};
 
 /* Functions */
 
@@ -180,6 +188,7 @@ Param_t *GetParam(int argc, const char **argv)
   Geo_coord_t lr_corner;
   int copy_dim[MYHDF_MAX_RANK];
   Img_coord_int_t swathDims;
+  char *geoProductName;
 
   /* Create the Param data structure */
   this = (Param_t *)malloc(sizeof(Param_t));
@@ -286,22 +295,29 @@ Param_t *GetParam(int argc, const char **argv)
   }
   
   char *productName = getVIIRSproductNameFromFilename(getFilenameFromPath(this->input_file_name, '/'));
-  //if (productName == NULL) {
   if (strcmp(productName, productNotDetermined) == 0) {
       sprintf(msg, "can't determine productName from input filename: %s \n", this->input_file_name);
       LogInfomsg(msg);
   }
   this->productName = productName;
   
-  char *geoProductName = getVIIRSgeoProductNameFromFilename(getFilenameFromPath(this->geoloc_file_name, '/'));
-  //if (geoProductName == NULL) {
-  if (strcmp(geoProductName, productNotDetermined) == 0) {
-      sprintf(msg, "can't determine GEO product from input filename: %s \n", this->geoloc_file_name);
-      LogInfomsg(msg);
-      FreeParam(this);
-      return (Param_t *)NULL;
+  if (!(this->geoloc_file_name == (char *)NULL)) {
+      char *geoProductName = getVIIRSgeoProductNameFromFilename(getFilenameFromPath(this->geoloc_file_name, '/'));
+      if (strcmp(geoProductName, productNotDetermined) == 0) {
+          sprintf(msg, "can't determine GEO product from input filename: %s \n", this->geoloc_file_name);
+          LogInfomsg(msg);
+          FreeParam(this);
+          return (Param_t *)NULL;
+      }
+      this->geoProductName = geoProductName;
   }
-  this->geoProductName = geoProductName;
+  else {
+      this->geoProductName = this->productName;
+      this->geoloc_file_name = DupString(this->input_file_name);
+  }
+  
+  this->input_sds_lon_name = DupString(getLonSDSNameFromGeoProductName(this->geoProductName));
+  this->input_sds_lat_name = DupString(getLatSDSNameFromGeoProductName(this->geoProductName));
 
   /* Check the output filename */
   if ((this->output_file_name == (char *)NULL)  ||  
@@ -456,9 +472,7 @@ Param_t *GetParam(int argc, const char **argv)
     /* No pixel size was specified, so try to determine the resolution of
        the input SDSs and use that for the pixel size. It is assumed that
        the input swath product will have the same resolution for all SDSs. */
-    if (!DeterminePixelSizeV(this->geoloc_file_name, this->num_input_sds,
-      geoProductName, this->output_space_def.proj_num,
-      this->output_pixel_size)) {
+    if (!DeterminePixelSizeV(this, geoProductName)) {
       sprintf(msg, "resamp: error determining output pixel size. "
         "Therefore, in order to process this data, the output pixel size "
         "must be specified.\n");
@@ -655,6 +669,16 @@ Param_t *CopyParam(Param_t *param)
   
   this->has_user_background_fill = param->has_user_background_fill;
   this->user_background_fill = param->user_background_fill;
+  
+  if (param->input_sds_lat_name != NULL)
+      this->input_sds_lat_name = strdup(param->input_sds_lat_name);
+  else
+      this->input_sds_lat_name = (char *)NULL;
+
+  if (param->input_sds_lon_name != NULL)
+      this->input_sds_lon_name = strdup(param->input_sds_lon_name);
+  else
+      this->input_sds_lon_name = (char *)NULL;  
 
   return this;
 }
@@ -958,6 +982,44 @@ float getVIIRSpixelResolutionFromGeoProductName(char *name) {
     }
     else {
         return 5000.0;
+    }
+}
+
+char *getLonSDSNameFromGeoProductName(char *name) {
+    int k;
+    int idx = -1;
+    
+    for (k=0; k<numProducts; k++) {
+        if (strcmp(geoProductNames[k], name) == 0) {
+            idx = k;
+            break;
+        }
+    }
+    
+    if (idx >= 0 && idx < numProducts) {
+        return longitudePathNames[idx];
+    }
+    else {
+        return (char *)NULL;
+    }
+}
+
+char *getLatSDSNameFromGeoProductName(char *name) {
+    int k;
+    int idx = -1;
+    
+    for (k=0; k<numProducts; k++) {
+        if (strcmp(geoProductNames[k], name) == 0) {
+            idx = k;
+            break;
+        }
+    }
+    
+    if (idx >= 0 && idx < numProducts) {
+        return latitudePathNames[idx];
+    }
+    else {
+        return (char *)NULL;
     }
 }
 
