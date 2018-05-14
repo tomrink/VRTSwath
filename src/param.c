@@ -472,7 +472,7 @@ Param_t *GetParam(int argc, const char **argv)
     /* No pixel size was specified, so try to determine the resolution of
        the input SDSs and use that for the pixel size. It is assumed that
        the input swath product will have the same resolution for all SDSs. */
-    if (!DeterminePixelSizeV(this, geoProductName)) {
+    if (!DeterminePixelSizeV(this, this->geoProductName)) {
       sprintf(msg, "resamp: error determining output pixel size. "
         "Therefore, in order to process this data, the output pixel size "
         "must be specified.\n");
