@@ -123,7 +123,7 @@
 extern Proj_sphere_t Proj_sphere[PROJ_NSPHERE];
 extern Proj_type_t Proj_type[PROJ_NPROJ];
 
-char *productNotDetermined = "ProductNotDetermined";
+char *productNotDetermined = "Generic";
 int numProducts = 12;
 char *productNames[] = {"VL1BM", "VL1BI", "VNP02MOD", "VNP02DNB", "VNP02IMG", "VJ102MOD", "VJ102DNB", "VJ102IMG", "VJ202MOD", "VJ202DNB", "VJ202IMG", "VNPAERDB"};
 char *geoProductNames[] = {"VGEOM", "VGEOI", "VNP03MOD", "VNP03DNB", "VNP03IMG", "VJ103MOD", "VJ103DNB", "VJ103IMG", "VJ203MOD", "VJ203DNB", "VJ203IMG", "VNPAERDB"};
@@ -295,10 +295,6 @@ Param_t *GetParam(int argc, const char **argv)
   }
   
   char *productName = getVIIRSproductNameFromFilename(getFilenameFromPath(this->input_file_name, '/'));
-  if (strcmp(productName, productNotDetermined) == 0) {
-      sprintf(msg, "can't determine productName from input filename: %s \n", this->input_file_name);
-      LogInfomsg(msg);
-  }
   this->productName = productName;
   
   if (!(this->geoloc_file_name == (char *)NULL)) {
