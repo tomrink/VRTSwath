@@ -251,12 +251,12 @@ int ConvertCorners(Param_t *param)
         FreeParam(param);
         LOG_RETURN_ERROR("error converting projection parameters from decimal degrees to DMS",
                          "ConvertCorners", false);
-    }  
-
+    }
+    
     output_space_def->pixel_size = param->output_pixel_size[0];
     output_space_def->img_size.s = 1;
     output_space_def->img_size.l = 1;
-
+    
     /* Get the forward and reverse transformation functions */
     out_space = SetupSpace(output_space_def);
     if (out_space == (Space_t *)NULL) {
@@ -268,6 +268,127 @@ int ConvertCorners(Param_t *param)
     miny = FLT_MAX,
     maxy = -FLT_MAX;
     
+    bool spansDateline = false;
+    float lon_west = 180;
+    float lon_east = -180;
+    float lon, lat;
+    bool pos;
+    
+    int numSidesSpan = 0;
+    
+    if (output_space_def->proj_num == PROJ_GEO)
+    {
+        for (i=0; i<del_samp-1; i++) {
+            if (fabs(lon_side_a[i+1] - lon_side_a[i]) > 180) {
+                numSidesSpan++;
+                break;
+            }
+        }
+
+        for (i=0; i<del_line-1; i++) {
+            if (fabs(lon_side_b[i+1] - lon_side_b[i]) > 180) {
+                numSidesSpan++;
+                break;
+            }            
+        }
+
+        for (i=0; i<del_samp-1; i++) {
+            if (fabs(lon_side_c[i+1] - lon_side_c[i]) > 180) {
+                numSidesSpan++;
+                break;
+            }
+        }
+
+        for (i=0; i<del_line-1; i++) {
+            if (fabs(lon_side_d[i+1] - lon_side_d[i]) > 180) {
+                numSidesSpan++;
+                break;
+            }
+        }
+    }
+    
+    if (numSidesSpan == 2) {
+        for (i=0; i<del_samp; i++) {
+            lon = lon_side_a[i];
+            if (lon > 0) {
+                if (lon < lon_west) lon_west = lon;
+            }
+            else {
+                if (lon > lon_east) lon_east = lon;
+            }
+        }
+        
+        for (i=0; i<del_line; i++) {
+            lon = lon_side_b[i];
+            if (lon > 0) {
+                if (lon < lon_west) lon_west = lon;
+            }
+            else {
+                if (lon > lon_east) lon_east = lon;
+            }
+            
+        }  
+        
+        for (i=0; i<del_samp; i++) {
+            lon = lon_side_c[i];
+            if (lon > 0) {
+                if (lon < lon_west) lon_west = lon;
+            }
+            else {
+                if (lon > lon_east) lon_east = lon;
+            }            
+        }  
+        
+        for (i=0; i<del_line; i++) {
+            lon = lon_side_d[i];
+            if (lon > 0) {
+                if (lon < lon_west) lon_west = lon;
+            }
+            else {
+                if (lon > lon_east) lon_east = lon;
+            }            
+        }
+        minx *= RAD;
+        miny *= RAD;
+        maxx *= RAD;
+        maxy *= RAD;
+    }
+    else if (numSidesSpan == 1) { // must contain north or south pole
+        minx = -180;
+        maxx = 180;
+        miny = 90;
+        maxy = -90;
+        for (i=0; i<del_samp; i++) {
+            lat = lat_side_a[i];
+            if (lat < miny) miny = lat;
+            if (lat > maxy) maxy = lat;
+        }
+        
+        for (i=0; i<del_line; i++) {
+            lat = lat_side_b[i];
+            if (lat < miny) miny = lat;
+            if (lat > maxy) maxy = lat;
+            
+        }  
+        
+        for (i=0; i<del_samp; i++) {
+            lat = lat_side_c[i];
+            if (lat < miny) miny = lat;
+            if (lat > maxy) maxy = lat;
+        }  
+        
+        for (i=0; i<del_line; i++) {
+            lat = lat_side_d[i];
+            if (lat < miny) miny = lat;
+            if (lat > maxy) maxy = lat;
+        }
+        minx *= RAD;
+        miny *= RAD;
+        maxx *= RAD;
+        maxy *= RAD;
+    }
+    
+    // for both GEO and others. if (numSidesSpan == 0) {
     for (i=0; i<del_samp; i++) {
         geo_coord_p.lon = lon_side_a[i]*RAD;
         geo_coord_p.lat = lat_side_a[i]*RAD;
@@ -328,6 +449,7 @@ int ConvertCorners(Param_t *param)
         if (output_coord_p.y < miny) miny = output_coord_p.y;
         if (output_coord_p.y > maxy) maxy = output_coord_p.y;        
     }
+    //}
     
      for (i = 0; i < param->num_input_sds; i++)
      {
@@ -372,7 +494,7 @@ int ConvertCorners(Param_t *param)
      
      output_space_def->lr_corner.y = output_space_def->ul_corner.y -
          output_space_def->img_size.l * output_space_def->pixel_size;
-
+     
 #ifdef DEBUG
      if (output_space_def->proj_num == PROJ_GEO)
      {
