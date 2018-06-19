@@ -665,17 +665,10 @@ Param_t *CopyParam(Param_t *param)
   
   this->has_user_background_fill = param->has_user_background_fill;
   this->user_background_fill = param->user_background_fill;
+
+  this->input_sds_lat_name = param->input_sds_lat_name;
+  this->input_sds_lon_name = param->input_sds_lon_name;
   
-  if (param->input_sds_lat_name != NULL)
-      this->input_sds_lat_name = strdup(param->input_sds_lat_name);
-  else
-      this->input_sds_lat_name = (char *)NULL;
-
-  if (param->input_sds_lon_name != NULL)
-      this->input_sds_lon_name = strdup(param->input_sds_lon_name);
-  else
-      this->input_sds_lon_name = (char *)NULL;  
-
   return this;
 }
 
