@@ -392,36 +392,6 @@ int main (int argc, const char **argv)
       if (output_space == (Space_t *)NULL) 
         LOG_ERROR("setting up output space", "main");
 
-      /* Compute and print out the corners */
-      img.is_fill = false;
-      img.l = img.s = 0.0;
-      if (!FromSpace(output_space, &img, &geo)) 
-      {
-        LOG_WARNING("unable to compute upper left corner", "main");
-      }
-      else
-      {
-        sprintf(msg,
-          "  output upper left corner: lat %13.8f  long %13.8f\n", 
-          (DEG * geo.lat), (DEG * geo.lon));
-	LogInfomsg(msg);
-      }
-
-      img.is_fill = false;
-      img.l = output_space->def.img_size.l - 1; 
-      img.s = output_space->def.img_size.s - 1;
-      if (!FromSpace(output_space, &img, &geo)) 
-      {
-        LOG_WARNING("unable to compute lower right corner", "main");
-      }
-      else
-      {
-        sprintf(msg,
-          "  output lower right corner: lat %13.8f  long %13.8f\n", 
-          (DEG * geo.lat), (DEG * geo.lon));
-        LogInfomsg(msg);
-      }
-
       /* If output data type not specified, then set to input data type
          (changes from SDS to SDS) */
       if (param->output_data_type == -1) 
