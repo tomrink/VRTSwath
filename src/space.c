@@ -178,6 +178,7 @@ Space_t *SetupSpace(Space_def_t *space_def)
   this->def.zone = space_def->zone;
   this->def.sphere = space_def->sphere;
   this->def.isin_type = space_def->isin_type;
+  this->def.straddlesDateline = space_def->straddlesDateline;
   for (ip = 0; ip < NPROJ_PARAM; ip++) {
     this->def.proj_param[ip] = space_def->proj_param[ip];
   }
@@ -266,6 +267,9 @@ bool ToSpace(Space_t *this, Geo_coord_t *geo, Img_coord_double_t *img)
     LOG_RETURN_ERROR("forward transform", "ToSpace", false);
 
   img->l = (this->def.ul_corner.y - map.y) / this->def.pixel_size;
+  if (this->def.proj_num == GEO && this->def.straddlesDateline) {
+      if (map.x < 0) map.x += 2*3.14159267;
+  }
   img->s = (map.x - this->def.ul_corner.x) / this->def.pixel_size;
   img->is_fill = false;
 
