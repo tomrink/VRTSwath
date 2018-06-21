@@ -117,7 +117,8 @@ typedef struct {
                            'true' = set; 'false' = not set */
   Space_isin_t isin_type;  /* Flag to indicate whether the projection is ISIN,
                               and if it is, the ISIN nesting */
-  bool straddlesDateline;  /* Flat to indicate swath spans dateline (Used for GEO projection) */
+  bool straddlesDateline;  /* Flag to indicate swath spans dateline (Used for GEO projection) */
+  bool containsPole; /* Flag to indicate swath over pole (Used for GEO projection only) */
 } Space_def_t;
 
 /* Structure to store the space information */

@@ -101,6 +101,7 @@ int ConvertCorners(Param_t *param)
   /* Make the pointers cleaner */
   output_space_def = &(param->output_space_def);
   output_space_def->straddlesDateline = false;
+  output_space_def->containsPole = false;
   
   for (i=0; i<NPROJ_PARAM; i++) {
       if (output_space_def->proj_param[i] != -999.0) {
@@ -396,6 +397,7 @@ int ConvertCorners(Param_t *param)
         maxx = lon_east;
     }
     else if (numSidesSpan == 1) { // must contain north or south pole
+        output_space_def->containsPole = true;
         minx = -180;
         maxx = 180;
         miny = 90;
@@ -499,7 +501,13 @@ int ConvertCorners(Param_t *param)
        if (output_space_def->proj_num == PROJ_GEO)
        {
          /* Convert Geographic pixel size from degrees to radians */
-         param->output_pixel_size[i] *= RAD;
+           
+           if (output_space_def->containsPole) {
+               param->output_pixel_size[i] = (maxx - minx)/(lr_line - ul_line);
+           }
+           else {
+               param->output_pixel_size[i] *= RAD;
+           }
        }
 
        /* Calculate the number of output lines and samples */

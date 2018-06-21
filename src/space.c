@@ -179,6 +179,7 @@ Space_t *SetupSpace(Space_def_t *space_def)
   this->def.sphere = space_def->sphere;
   this->def.isin_type = space_def->isin_type;
   this->def.straddlesDateline = space_def->straddlesDateline;
+  this->def.containsPole = space_def->containsPole;
   for (ip = 0; ip < NPROJ_PARAM; ip++) {
     this->def.proj_param[ip] = space_def->proj_param[ip];
   }
