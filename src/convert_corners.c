@@ -94,11 +94,13 @@ int ConvertCorners(Param_t *param)
   float *lat_side_c;
   float *lon_side_d;
   float *lat_side_d;
+  int numSidesSpan = 0;
   
   int userDefinedProjParams = FALSE;
   
   /* Make the pointers cleaner */
   output_space_def = &(param->output_space_def);
+  output_space_def->straddlesDateline = false;
   
   for (i=0; i<NPROJ_PARAM; i++) {
       if (output_space_def->proj_param[i] != -999.0) {
@@ -272,7 +274,7 @@ int ConvertCorners(Param_t *param)
     float lon, lat;
     bool pos;
     
-    int numSidesSpan = 0;
+    //int numSidesSpan = 0;
     
     if (output_space_def->proj_num == PROJ_GEO)
     {
@@ -346,8 +348,10 @@ int ConvertCorners(Param_t *param)
         }
     
     if (numSidesSpan == 2) {
+        output_space_def->straddlesDateline = true;
         float lon_west = 180;
-        float lon_east = -180;        
+        float lon_east = -180;
+        
         for (i=0; i<del_samp; i++) {
             lon = lon_side_a[i];
             if (lon > 0) {
@@ -962,8 +966,13 @@ int ConvertCorners(Param_t *param)
                    "ConvertCorners", false);
   }
   output_space_def->lr_corner_geo.lat = geo_coord_p.lat;
-  output_space_def->lr_corner_geo.lon = geo_coord_p.lon;
-
+  if (output_space_def->proj_num == PROJ_GEO && output_space_def->straddlesDateline) {
+      if (geo_coord_p.lon < 0) {
+          output_space_def->lr_corner_geo.lon = 2*3.14159267 + geo_coord_p.lon;
+          output_space_def->lr_corner.x += 2*3.14159267;
+      }
+  }
+  
   /* Free the output space */
   FreeSpace(out_space);
 
