@@ -307,8 +307,8 @@ int ConvertCorners(Param_t *param)
             }
         }
         
-        minx = -180;
-        maxx = 180;
+        minx = 180;
+        maxx = -180;
         miny = 90;
         maxy = -90;
         
@@ -316,6 +316,7 @@ int ConvertCorners(Param_t *param)
             lat = lat_side_a[i];
             if (lat < miny) miny = lat;
             if (lat > maxy) maxy = lat;
+            
             lon = lon_side_a[i];
             if (lon < minx) minx = lon;
             if (lon > maxx) maxx = lon;            
@@ -325,6 +326,7 @@ int ConvertCorners(Param_t *param)
             lat = lat_side_b[i];
             if (lat < miny) miny = lat;
             if (lat > maxy) maxy = lat;
+            
             lon = lon_side_b[i];
             if (lon < minx) minx = lon;
             if (lon > maxx) maxx = lon;                        
@@ -334,6 +336,7 @@ int ConvertCorners(Param_t *param)
             lat = lat_side_c[i];
             if (lat < miny) miny = lat;
             if (lat > maxy) maxy = lat;
+            
             lon = lon_side_c[i];
             if (lon < minx) minx = lon;
             if (lon > maxx) maxx = lon;                        
@@ -343,6 +346,7 @@ int ConvertCorners(Param_t *param)
             lat = lat_side_d[i];
             if (lat < miny) miny = lat;
             if (lat > maxy) maxy = lat;
+            
             lon = lon_side_d[i];
             if (lon < minx) minx = lon;
             if (lon > maxx) maxx = lon;                        
