@@ -458,7 +458,7 @@ int main (int argc, const char **argv)
           LOG_ERROR("resampling a scan", "main");
 
         /* Toss patches that were not touched */
-        if (!output_space->def.containsPole) {
+        if (!output_space->def.proj_num == PROJ_GEO) {
             if (!TossPatches(patches, param->output_data_type))
               LOG_ERROR("writting patches to disk", "main");
         }
