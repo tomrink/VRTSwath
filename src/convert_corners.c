@@ -522,7 +522,20 @@ int ConvertCorners(Param_t *param)
        
        if (output_space_def->proj_num == PROJ_GEO) {
          
-           float del = (180 - minx*DEG) - (-180 - maxx*DEG);
+           float del;
+           
+           if (minx < 0 && maxx < 0) {
+               del = abs(minx*DEG - maxx*DEG);
+           }
+           else if (minx > 0 && maxx > 0) {
+               del = abs(minx*DEG - maxx*DEG);
+           }
+           else if (minx > 0 && maxx < 0) {
+               del = (180 - minx*DEG) - (-180 - maxx*DEG);
+           }
+           else if (minx < 0 && maxx > 0) {
+               del = maxx*DEG - minx*DEG;
+           }
 
            param->output_img_size[i].s =
              (int) ((del*RAD) / param->output_pixel_size[i] + 0.5);           
@@ -546,23 +559,18 @@ int ConvertCorners(Param_t *param)
      output_space_def->ul_corner.y = maxy;
      
      if (output_space_def->proj_num == PROJ_GEO) {
-         
          output_space_def->lr_corner.x = maxx;
          output_space_def->lr_corner.y = miny;
-         
      }
      else {
+         output_space_def->lr_corner.x = output_space_def->ul_corner.x +
+             output_space_def->img_size.s * output_space_def->pixel_size;
      
-     output_space_def->lr_corner.x = output_space_def->ul_corner.x +
-         output_space_def->img_size.s * output_space_def->pixel_size;
-     
-     output_space_def->lr_corner.y = output_space_def->ul_corner.y -
-         output_space_def->img_size.l * output_space_def->pixel_size;
+         output_space_def->lr_corner.y = output_space_def->ul_corner.y -
+             output_space_def->img_size.l * output_space_def->pixel_size;
      }
      
      
-     
-    
     /* Close geolocation file */
     if (!CloseGeoloc(geoloc)) {
       FreeGeoloc(geoloc);
