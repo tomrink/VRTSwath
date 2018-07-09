@@ -136,7 +136,7 @@
 /* Constants */
 
 #define NPATCH_MEM_INIT (4)  /* Initial number of sets of patches in memory */
-#define NPATCH_MEM_MAX (80)  /* Maximum number of sets of patches in memory */
+#define NPATCH_MEM_MAX (120)  /* Maximum number of sets of patches in memory */
 #define MIN_WEIGHT (0.10)    /* Minimum weight for a valid output pixel */
 
 /* Functions */
