@@ -432,6 +432,12 @@ int ConvertCorners(Param_t *param)
             if (lat > maxy) maxy = lat;
         }
     }
+        
+        maxy = 90;
+        if (miny < 0) {
+            maxy = miny;
+            miny = -90;
+        }
         minx *= RAD;
         miny *= RAD;
         maxx *= RAD;
