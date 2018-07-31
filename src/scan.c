@@ -88,7 +88,12 @@
 
 /* Constants */
 
-#define NSCAN_TOUCH (2)   /* Value to set 'ntouch' to when a scan is touched */
+/* Increasing this seems to hold patches in memory longer so that subsequent spatially
+   overlapping scan lines do not need to retrieve the patch from disk. That operation 
+   may be problematic. (TDR) 
+ */
+#define NSCAN_TOUCH (10)   /* Value to set 'ntouch' to when a scan is touched */
+
 #define MIN_WEIGHT (0.10) /* Minimum weight for a valid output pixel */
 
 /* #define DEBUG_ZEROS */
