@@ -85,6 +85,7 @@
 
 #include "scan.h"
 #include "myerror.h"
+#include "myproj.h"
 
 /* Constants */
 
@@ -1257,7 +1258,8 @@ bool ProcessScan (Scan_t*        this,
                   Kernel_t*      kernel, 
                   Patches_t*     patches, 
                   int            nl,
-                  Kernel_type_t  kernel_type)
+                  Kernel_type_t  kernel_type,
+                  int            proj_num)
 /* 
 !C******************************************************************************
 
@@ -1433,7 +1435,36 @@ bool ProcessScan (Scan_t*        this,
             {
                   continue;
             }
-       
+            
+            if (proj_num == PROJ_GEO) {
+            
+                if (abs(p0->l - p1->l) > 0.5*patches->size.l) {
+                    continue;
+                }
+                else if( abs(p0->s - p1->s) > 0.5*patches->size.s) {
+                    continue;
+                }
+                else if (abs(p2->l - p3->l) > 0.5*patches->size.l) {
+                    continue;
+                }
+                else if( abs(p2->s - p3->s) > 0.5*patches->size.s) {
+                    continue;
+                }
+                else if (abs(p0->l - p3->l) > 0.5*patches->size.l) {
+                    continue;
+                }
+                else if( abs(p0->s - p3->s) > 0.5*patches->size.s) {
+                    continue;
+                }
+                else if (abs(p2->l - p1->l) > 0.5*patches->size.l) {
+                    continue;
+                }
+                else if( abs(p2->s - p2->s) > 0.5*patches->size.s) {
+                    continue;
+                }
+            
+            }
+            
             d = p0->l;
             if (d > p1->l) 
                 d = p1->l;

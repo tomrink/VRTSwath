@@ -98,6 +98,6 @@ bool MapScanGrid(Scan_t *this, Geoloc_t *geoloc, Space_def_t *output_space_def,
 bool ExtendScan(Scan_t *this);
 bool GetScanInput(Scan_t *this, Input_t *input, int il, int nl);
 bool ProcessScan(Scan_t *this, Kernel_t *kernel, Patches_t *patches, int nl,
-                 Kernel_type_t kernel_type);
+                 Kernel_type_t kernel_type, int proj_num);
 
 #endif

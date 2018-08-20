@@ -454,7 +454,7 @@ int main (int argc, const char **argv)
           LOG_ERROR("reading input data for a scan", "main");
 
         /* Resample all of the points in the extended scan */
-        if (!ProcessScan(scan, kernel, patches, nl, param->kernel_type))
+        if (!ProcessScan(scan, kernel, patches, nl, param->kernel_type, output_space->def.proj_num))
           LOG_ERROR("resampling a scan", "main");
 
         /* Toss patches that were not touched */
