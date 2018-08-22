@@ -275,8 +275,6 @@ int ConvertCorners(Param_t *param)
     float lon, lat;
     bool pos;
     
-    //int numSidesSpan = 0;
-    
     if (output_space_def->proj_num == PROJ_GEO)
     {
         for (i=0; i<del_samp-1; i++) {
@@ -431,14 +429,14 @@ int ConvertCorners(Param_t *param)
             if (lat < miny) miny = lat;
             if (lat > maxy) maxy = lat;
         }
-    }
         
         if (maxy < 0) {
             miny = -90;
         }
         else {
             maxy = 90;
-        }
+        }        
+    }
         
         minx *= RAD;
         miny *= RAD;
@@ -515,7 +513,7 @@ int ConvertCorners(Param_t *param)
          /* Convert Geographic pixel size from degrees to radians */
            
            if (output_space_def->containsPole) {
-               param->output_pixel_size[i] = (maxx - minx)/(lr_line - ul_line);
+               param->output_pixel_size[i] *= RAD;
            }
            else {
                param->output_pixel_size[i] *= RAD;

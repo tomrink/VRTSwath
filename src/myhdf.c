@@ -477,13 +477,7 @@ bool DeterminePixelSizeV(Param_t *param, char *geoProductName)
        Geolocation file */
     else
     {
-       double posDiff = fabs(centerp1 - center);
-       if (posDiff > 180) {
-           param->output_pixel_size[i] = 360 - posDiff;
-       }
-       else {
-           param->output_pixel_size[i] = posDiff;
-       }
+       param->output_pixel_size[i] = pixelSize*(1.0/110000.0);
     }
   }
 
